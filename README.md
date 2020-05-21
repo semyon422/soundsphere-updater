@@ -1,8 +1,7 @@
 # soundsphere-updater
-Simple scripts for downloading and updating soundsphere.
+soundsphere launcher.
 
-* Install git https://git-scm.com/download/win
-* Download this repository as a zip archive
-* Run `download.bat` to download the game
-* Run `update.bat` to update the game to the latest commit
-* Run `reset.bat` to discard all local changes (exclude charts, cache, etc)
+* Download and extract launcher https://github.com/semyon422/soundsphere-updater/archive/master.zip
+* Go to git folder and install git by runnung `git_silent_install.bat` or `Git-2.24.1.2-64-bit.exe`
+* Run `launcher.bat` to download, update, start the game, change branch or reset all code
+* Also you can run game directly by running `soundsphere-*/start.bat`
