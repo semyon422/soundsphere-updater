@@ -40,7 +40,7 @@ local screen = "menu"
 
 local gitClonePattern = "git clone -b %s --recursive https://github.com/semyon422/soundsphere soundsphere-%s"
 local gitUpdatePattern = "cd soundsphere-%s && git pull --recurse-submodules"
-local gitResetPattern = "cd soundsphere-%s && git reset --hard"
+local gitResetPattern = "cd soundsphere-%s && git reset --hard --recurse-submodules"
 local startPattern = "@cd soundsphere-%s && call start.bat"
 
 while true do
