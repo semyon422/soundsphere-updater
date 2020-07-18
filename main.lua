@@ -41,7 +41,7 @@ local screen = "menu"
 local gitClonePattern = "git clone -b %s --recursive https://github.com/semyon422/soundsphere soundsphere-%s"
 local gitUpdatePattern = "cd soundsphere-%s && git pull --recurse-submodules"
 local gitResetPattern = "cd soundsphere-%s && git reset --hard --recurse-submodules"
-local startPattern = "@cd soundsphere-%s && call start.bat"
+local startPattern = "@cd soundsphere-%s && call start-win%s.bat"
 
 while true do
 	os.execute("cls")
@@ -55,7 +55,7 @@ while true do
 	print("6 - exit")
 	local entry = tonumber(io.read())
 	if entry == 1 then
-		os.execute(startPattern:format(branch))
+		os.execute(startPattern:format(branch, jit.arch == "x64" and 64 or 32))
 	elseif entry == 2 then
 		os.execute("cls")
 		pipe(gitClonePattern:format(branch, branch))
