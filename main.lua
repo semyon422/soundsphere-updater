@@ -68,28 +68,24 @@ local getClientFiles = function()
 	return json.decode(content)
 end
 
-local addFile = function(file)
+local addFiles = function(fileListToAdd)
 	local f = io.open("filelist.json", "r")
 
 	local fileList
-	local new = true
 	if f then
 		local content = f:read("*all")
 		f:close()
 		fileList = json.decode(content)
 
+		local fileMap = {}
 		for i, subfile in ipairs(fileList) do
-			if subfile.path == file.path then
-				fileList[i] = file
-				new = false
-				break
-			end
+			fileMap[subfile.path] = i
+		end
+		for j, subfile in ipairs(fileListToAdd) do
+			fileList[fileMap[subfile.path] or #fileList + 1] = subfile
 		end
 	else
-		fileList = {}
-	end
-	if new then
-		fileList[#fileList + 1] = file
+		fileList = fileListToAdd
 	end
 
 	local content = json.encode(fileList)
@@ -125,19 +121,21 @@ local curlUpdate = function()
 		return a.path < b.path
 	end)
 
+	local fileListToAdd = {}
 	for _, file in ipairs(fileList) do
 		if file.oldHash and not file.hash then
 			os.remove(file.path)
 		elseif file.hash and not file.oldHash then
 			download(file.url, file.path)
-			addFile(file)
+			fileListToAdd[#fileListToAdd + 1] = file
 		elseif file.hash ~= file.oldHash then
 			os.rename(file.path, file.path .. ".old")
 			download(file.url, file.path)
 			os.remove(file.path .. ".old")
-			addFile(file)
+			fileListToAdd[#fileListToAdd + 1] = file
 		end
 	end
+	addFiles(fileListToAdd)
 end
 
 local generateFileList = function()
@@ -178,7 +176,7 @@ while true do
 
 	print("soundsphere updater")
 	print("1 - play")
-	print("2 - download or update")
+	print("2 - update using curl")
 	print("3 - git clone")
 	print("4 - git pull")
 	print("5 - git reset")
