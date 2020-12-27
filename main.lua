@@ -52,7 +52,7 @@ local gitResetPattern = "cd soundsphere-%s && git reset --hard --recurse-submodu
 local startPattern = "@cd soundsphere-%s && call start-win%s.bat"
 
 local getServerFileList = function(self)
-	local response = download("https://soundsphere.xyz/static/filelist.json", "-")
+	local response = download("https://soundsphere.xyz/static/soundsphere-updater/filelist.json", "-")
 	return json.decode(response)
 end
 
@@ -93,7 +93,7 @@ local addFile = function(file)
 	end
 
 	local content = json.encode(fileList)
-	f = io.open("fileList.json", "w")
+	f = io.open("filelist.json", "w")
 	f:write(content)
 	f:close()
 end
@@ -183,7 +183,7 @@ while true do
 	print("4 - git pull")
 	print("5 - git reset")
 	print("6 - select branch [" .. branch .. "]")
-	print("7 - generate fileList.json")
+	print("7 - generate filelist.json")
 	print("8 - exit")
 
 	local entry = tonumber(io.read())
