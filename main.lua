@@ -1,13 +1,14 @@
 local json = require("luajit.json")
+local md5 = require("luajit.md5")
 
 local branch
-local file = io.open("branch", "r")
-if file then
-	branch = file:read("*all")
+local branchFile = io.open("branch", "r")
+if branchFile then
+	branch = branchFile:read("*all")
 else
-	local file = io.open("branch", "w")
-	file:write("master")
-	file:close()
+	branchFile = io.open("branch", "w")
+	branchFile:write("master")
+	branchFile:close()
 end
 
 branch = branch or "master"
@@ -25,9 +26,18 @@ local pipe = function(command)
 	io.write("\n")
 end
 
+local curlCommand = "curl\\curl"
+
+local download = function(url, path)
+	print(url)
+	local p = io.popen(
+		curlCommand .. " --silent --create-dirs --output " .. path .. " " .. url
+	)
+	return p:read("*all")
+end
+
 local getBranches = function()
-	local p = io.popen("cd curl && curl https://api.github.com/repos/semyon422/soundsphere/branches -o - --silent", "r")
-	local response = p:read("*all")
+	local response = download("https://api.github.com/repos/semyon422/soundsphere/branches", "-")
 	local jsonObject = json.decode(response)
 	local branches = {}
 	for i = 1, #jsonObject do
@@ -36,38 +46,164 @@ local getBranches = function()
 	return branches
 end
 
-local screen = "menu"
-
 local gitClonePattern = "git clone -b %s --recursive https://github.com/semyon422/soundsphere soundsphere-%s"
 local gitUpdatePattern = "cd soundsphere-%s && git pull --recurse-submodules"
 local gitResetPattern = "cd soundsphere-%s && git reset --hard --recurse-submodules"
 local startPattern = "@cd soundsphere-%s && call start-win%s.bat"
 
+local getServerFileList = function(self)
+	local response = download("https://soundsphere.xyz/static/filelist.json", "-")
+	return json.decode(response)
+end
+
+local getClientFiles = function()
+	local f = io.open("filelist.json", "r")
+
+	if not f then
+		return {}
+	end
+
+	local content = f:read("*all")
+	f:close()
+	return json.decode(content)
+end
+
+local addFile = function(file)
+	local f = io.open("filelist.json", "r")
+
+	local fileList
+	local new = true
+	if f then
+		local content = f:read("*all")
+		f:close()
+		fileList = json.decode(content)
+
+		for i, subfile in ipairs(fileList) do
+			if subfile.path == file.path then
+				fileList[i] = file
+				new = false
+				break
+			end
+		end
+	else
+		fileList = {}
+	end
+	if new then
+		fileList[#fileList + 1] = file
+	end
+
+	local content = json.encode(fileList)
+	f = io.open("fileList.json", "w")
+	f:write(content)
+	f:close()
+end
+
+local curlUpdate = function()
+	local serverFiles = getServerFileList()
+	local clientFiles = getClientFiles()
+
+	local fileMap = {}
+	for _, file in ipairs(serverFiles) do
+		local path = file.path
+		fileMap[path] = fileMap[path] or {}
+		fileMap[path].hash = file.hash
+		fileMap[path].path = path
+		fileMap[path].url = file.url
+	end
+	for _, file in ipairs(clientFiles) do
+		local path = file.path
+		fileMap[path] = fileMap[path] or {}
+		fileMap[path].oldHash = file.hash
+		fileMap[path].path = path
+	end
+
+	local fileList = {}
+	for _, file in pairs(fileMap) do
+		fileList[#fileList + 1] = file
+	end
+	table.sort(fileList, function(a, b)
+		return a.path < b.path
+	end)
+
+	for _, file in ipairs(fileList) do
+		if file.oldHash and not file.hash then
+			os.remove(file.path)
+		elseif file.hash and not file.oldHash then
+			download(file.url, file.path)
+			addFile(file)
+		elseif file.hash ~= file.oldHash then
+			os.rename(file.path, file.path .. ".old")
+			download(file.url, file.path)
+			os.remove(file.path .. ".old")
+			addFile(file)
+		end
+	end
+end
+
+local generateFileList = function()
+	local p = io.popen(
+		"where /R . *"
+	)
+	local pathList = {}
+	for line in p:lines() do
+		line = line:gsub("\\", "/")
+		if not line:find(".+/%..+") then
+			print(line:match("soundsphere%-updater/(.+)$"))
+			pathList[#pathList + 1] = line:match("soundsphere%-updater/(.+)$")
+		end
+	end
+
+	local fileList = {}
+	for _, path in ipairs(pathList) do
+		local file = {}
+		file.path = path
+		file.url = "https://soundsphere.xyz/static/soundsphere-updater/" .. path
+
+		local f = io.open(path, "r")
+		local content = f:read("*all")
+		f:close()
+		file.hash = md5.sumhexa(content)
+
+		fileList[#fileList + 1] = file
+	end
+
+	local content = json.encode(fileList)
+	local f = io.open("filelist.json", "w")
+	f:write(content)
+	f:close()
+end
+
 while true do
 	os.execute("cls")
+
 	print("soundsphere updater")
-	print("selected branch: " .. branch)
 	print("1 - play")
-	print("2 - download")
-	print("3 - update")
-	print("4 - select branch")
-	print("5 - reset")
-	print("6 - exit")
+	print("2 - download or update")
+	print("3 - git clone")
+	print("4 - git pull")
+	print("5 - git reset")
+	print("6 - select branch [" .. branch .. "]")
+	print("7 - generate fileList.json")
+	print("8 - exit")
+
 	local entry = tonumber(io.read())
+	os.execute("cls")
+
 	if entry == 1 then
 		os.execute(startPattern:format(branch, jit.arch == "x64" and 64 or 32))
 	elseif entry == 2 then
-		os.execute("cls")
-		pipe(gitClonePattern:format(branch, branch))
-		print("continue?")
-		io.read()
+		curlUpdate()
 	elseif entry == 3 then
-		os.execute("cls")
-		pipe(gitUpdatePattern:format(branch))
-		print("continue?")
-		io.read()
+		pipe(gitClonePattern:format(branch, branch))
 	elseif entry == 4 then
-		os.execute("cls")
+		pipe(gitUpdatePattern:format(branch))
+	elseif entry == 5 then
+		print("Are you sure? Type \"yes\"")
+		local answer = io.read()
+		if answer == "yes" then
+			pipe(gitResetPattern:format(branch))
+		end
+	elseif entry == 6 then
 		local branches = getBranches()
 		for i = 1, #branches do
 			print(i .. " - " .. branches[i])
@@ -76,16 +212,9 @@ while true do
 		local file = io.open("branch", "w")
 		file:write(branch)
 		file:close()
-	elseif entry == 5 then
-		os.execute("cls")
-		print("Are you sure? Type \"yes\"")
-		local answer = io.read()
-		if answer == "yes" then
-			pipe(gitResetPattern:format(branch))
-			print("continue?")
-			io.read()
-		end
-	elseif entry == 6 then
+	elseif entry == 7 then
+		generateFileList()
+	elseif entry == 8 then
 		os.exit()
 	end
 end
