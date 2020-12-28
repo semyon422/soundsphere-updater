@@ -57,6 +57,7 @@ local update_launcher = function()
 		return a.path < b.path
 	end)
 
+	local updated = #filelist
 	for _, file in ipairs(filelist) do
 		if file.hash_old and not file.hash then
 			os.remove(file.path)
@@ -66,8 +67,11 @@ local update_launcher = function()
 			os.rename(file.path, file.path .. ".old")
 			download(file.url, file.path)
 			os.remove(file.path .. ".old")
+		else
+			updated = updated - 1
 		end
 	end
+	return updated
 end
 
 local generate_filelist = function()
@@ -135,6 +139,12 @@ local select_branch = function()
 end
 
 while true do
+	local updated = update_launcher()
+	if updated > 0 then
+		dofile("main.lua")
+		os.exit()
+	end
+
 	os.execute("cls")
 
 	print("soundsphere updater")
@@ -154,7 +164,6 @@ while true do
 	elseif entry == 2 then
 		git_clone()
 	elseif entry == 3 then
-		-- update_launcher()
 		git_pull()
 	elseif entry == 4 then
 		print("Are you sure? Type \"yes\"")
