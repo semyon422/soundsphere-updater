@@ -164,7 +164,7 @@ end
 while true do
 	os.execute("cls")
 
-	print("soundsphere updater")
+	print("soundsphere launcher")
 	print("1 - play")
 	print("2 - download")
 	print("3 - update")
