@@ -80,7 +80,11 @@ local generate_filelist = function()
 	local pathlist = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/")
-		if not line:find(".+/%..+") and not line:find(".+/soundsphere%-updater/soundsphere.+") then
+		if
+			not line:find(".+/%..+") and
+			not line:find(".+/soundsphere%-updater/soundsphere.+") and
+			not line:find("noautoupdate")
+		then
 			pathlist[#pathlist + 1] = line:match("soundsphere%-updater/(.+)$")
 		end
 	end
@@ -138,13 +142,19 @@ local select_branch = function()
 	end
 end
 
-while true do
+local noautoupdate_file = io.open("noautoupdate", "r")
+if not noautoupdate_file then
 	local updated = update_launcher()
 	if updated > 0 then
+		os.execute("cls")
 		dofile("main.lua")
 		os.exit()
 	end
+else
+	noautoupdate_file:close()
+end
 
+while true do
 	os.execute("cls")
 
 	print("soundsphere updater")
