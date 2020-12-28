@@ -1,158 +1,88 @@
 local json = require("luajit.json")
 local md5 = require("luajit.md5")
 
-local branch
-local branchFile = io.open("branch", "r")
-if branchFile then
-	branch = branchFile:read("*all")
+local branch = "master"
+local branch_file = io.open("branch", "r")
+if branch_file then
+	branch = branch_file:read("*all")
 else
-	branchFile = io.open("branch", "w")
-	branchFile:write("master")
-	branchFile:close()
+	branch_file = io.open("branch", "w")
+	branch_file:write(branch)
+	branch_file:close()
 end
-
-branch = branch or "master"
-
-local pipe = function(command)
-	local p = io.popen(command, "r")
-	while true do
-		local line = p:read()
-		if line then
-			io.write(line)
-		else
-			break
-		end
-	end
-	io.write("\n")
-end
-
-local curlCommand = "curl\\curl"
 
 local download = function(url, path)
-	print(url)
-	local p = io.popen(
-		curlCommand .. " --silent --create-dirs --output " .. path .. " " .. url
-	)
+	print(("Downloading %s"):format(url))
+	local p = io.popen(("curl --silent --create-dirs --output %s %s"):format(path, url))
 	return p:read("*all")
 end
 
-local getBranches = function()
-	local response = download("https://api.github.com/repos/semyon422/soundsphere/branches", "-")
-	local jsonObject = json.decode(response)
-	local branches = {}
-	for i = 1, #jsonObject do
-		branches[#branches + 1] = jsonObject[i].name
-	end
-	return branches
-end
-
-local gitClonePattern = "git clone -b %s --recursive https://github.com/semyon422/soundsphere soundsphere-%s"
-local gitUpdatePattern = "cd soundsphere-%s && git pull --recurse-submodules"
-local gitResetPattern = "cd soundsphere-%s && git reset --hard --recurse-submodules"
-local startPattern = "@cd soundsphere-%s && call start-win%s.bat"
-
-local getServerFileList = function(self)
+local update_launcher = function()
 	local response = download("https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/filelist.json", "-")
-	return json.decode(response)
-end
+	local server_filelist = json.decode(response)
 
-local getClientFiles = function()
-	local f = io.open("filelist.json", "r")
+	local client_filelist
+	do
+		local f = io.open("filelist.json", "r")
 
-	if not f then
-		return {}
-	end
-
-	local content = f:read("*all")
-	f:close()
-	return json.decode(content)
-end
-
-local addFiles = function(fileListToAdd)
-	local f = io.open("filelist.json", "r")
-
-	local fileList
-	if f then
-		local content = f:read("*all")
-		f:close()
-		fileList = json.decode(content)
-
-		local fileMap = {}
-		for i, subfile in ipairs(fileList) do
-			fileMap[subfile.path] = i
+		if not f then
+			client_filelist = {}
+		else
+			local content = f:read("*all")
+			f:close()
+			client_filelist = json.decode(content)
 		end
-		for j, subfile in ipairs(fileListToAdd) do
-			fileList[fileMap[subfile.path] or #fileList + 1] = subfile
-		end
-	else
-		fileList = fileListToAdd
 	end
 
-	local content = json.encode(fileList)
-	f = io.open("filelist.json", "w")
-	f:write(content)
-	f:close()
-end
-
-local curlUpdate = function()
-	local serverFiles = getServerFileList()
-	local clientFiles = getClientFiles()
-
-	local fileMap = {}
-	for _, file in ipairs(serverFiles) do
+	local filemap = {}
+	for _, file in ipairs(server_filelist) do
 		local path = file.path
-		fileMap[path] = fileMap[path] or {}
-		fileMap[path].hash = file.hash
-		fileMap[path].path = path
-		fileMap[path].url = file.url
+		filemap[path] = filemap[path] or {}
+		filemap[path].hash = file.hash
+		filemap[path].path = path
+		filemap[path].url = file.url
 	end
-	for _, file in ipairs(clientFiles) do
+	for _, file in ipairs(client_filelist) do
 		local path = file.path
-		fileMap[path] = fileMap[path] or {}
-		fileMap[path].oldHash = file.hash
-		fileMap[path].path = path
+		filemap[path] = filemap[path] or {}
+		filemap[path].hash_old = file.hash
+		filemap[path].path = path
 	end
 
-	local fileList = {}
-	for _, file in pairs(fileMap) do
-		fileList[#fileList + 1] = file
+	local filelist = {}
+	for _, file in pairs(filemap) do
+		filelist[#filelist + 1] = file
 	end
-	table.sort(fileList, function(a, b)
+	table.sort(filelist, function(a, b)
 		return a.path < b.path
 	end)
 
-	local fileListToAdd = {}
-	for _, file in ipairs(fileList) do
-		if file.oldHash and not file.hash then
+	for _, file in ipairs(filelist) do
+		if file.hash_old and not file.hash then
 			os.remove(file.path)
-		elseif file.hash and not file.oldHash then
+		elseif file.hash and not file.hash_old then
 			download(file.url, file.path)
-			fileListToAdd[#fileListToAdd + 1] = file
-		elseif file.hash ~= file.oldHash then
+		elseif file.hash ~= file.hash_old then
 			os.rename(file.path, file.path .. ".old")
 			download(file.url, file.path)
 			os.remove(file.path .. ".old")
-			fileListToAdd[#fileListToAdd + 1] = file
 		end
 	end
-	addFiles(fileListToAdd)
 end
 
-local generateFileList = function()
-	local p = io.popen(
-		"where /R . *"
-	)
-	local pathList = {}
+local generate_filelist = function()
+	local p = io.popen("where /R . *")
+
+	local pathlist = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/")
 		if not line:find(".+/%..+") and not line:find(".+/soundsphere%-updater/soundsphere.+") then
-			print(line:match("soundsphere%-updater/(.+)$"))
-			pathList[#pathList + 1] = line:match("soundsphere%-updater/(.+)$")
+			pathlist[#pathlist + 1] = line:match("soundsphere%-updater/(.+)$")
 		end
 	end
 
-	local fileList = {}
-	for _, path in ipairs(pathList) do
+	local filelist = {}
+	for _, path in ipairs(pathlist) do
 		local file = {}
 		file.path = path
 		file.url = "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/" .. path
@@ -162,13 +92,46 @@ local generateFileList = function()
 		f:close()
 		file.hash = md5.sumhexa(content)
 
-		fileList[#fileList + 1] = file
+		filelist[#filelist + 1] = file
 	end
 
-	local content = json.encode(fileList)
+	local content = json.encode(filelist)
 	local f = io.open("filelist.json", "w")
 	f:write(content)
 	f:close()
+end
+
+local start_game = function()
+	os.execute(("@cd soundsphere-%s && call start-win64.bat"):format(branch))
+end
+
+local git_clone = function()
+	os.execute(("@git clone -b %s --recursive https://github.com/semyon422/soundsphere soundsphere-%s"):format(branch, branch))
+end
+
+local git_pull = function()
+	os.execute(("@cd soundsphere-%s && git pull --recurse-submodules"):format(branch))
+end
+
+local git_reset = function()
+	os.execute(("@cd soundsphere-%s && git reset --hard --recurse-submodules"):format(branch))
+end
+
+local select_branch = function()
+	local response = download("https://api.github.com/repos/semyon422/soundsphere/branches", "-")
+	local branches = json.decode(response)
+
+	for i = 1, #branches do
+		print(i .. " - " .. branches[i].name)
+	end
+
+	local branch_index = tonumber(io.read())
+	if branch_index then
+		branch = branches[branch_index].name
+		local file = io.open("branch", "w")
+		file:write(branch)
+		file:close()
+	end
 end
 
 while true do
@@ -180,36 +143,29 @@ while true do
 	print("3 - update")
 	print("4 - reset")
 	print("5 - select branch [" .. branch .. "]")
-	print("6 - generate filelist.json")
+	print("6 - generate filelist")
 	print("7 - exit")
 
 	local entry = tonumber(io.read())
 	os.execute("cls")
 
 	if entry == 1 then
-		os.execute(startPattern:format(branch, jit.arch == "x64" and 64 or 32))
+		start_game()
 	elseif entry == 2 then
-		pipe(gitClonePattern:format(branch, branch))
+		git_clone()
 	elseif entry == 3 then
-		curlUpdate()
-		pipe(gitUpdatePattern:format(branch))
+		-- update_launcher()
+		git_pull()
 	elseif entry == 4 then
 		print("Are you sure? Type \"yes\"")
 		local answer = io.read()
 		if answer == "yes" then
-			pipe(gitResetPattern:format(branch))
+			git_reset()
 		end
 	elseif entry == 5 then
-		local branches = getBranches()
-		for i = 1, #branches do
-			print(i .. " - " .. branches[i])
-		end
-		branch = branches[tonumber(io.read())] or "master"
-		local file = io.open("branch", "w")
-		file:write(branch)
-		file:close()
+		select_branch()
 	elseif entry == 6 then
-		generateFileList()
+		generate_filelist()
 	elseif entry == 7 then
 		os.exit()
 	end

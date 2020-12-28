@@ -1,3 +1,4 @@
 @echo off
-luajit\luajit main.lua
+set PATH=%PATH%;curl;luajit
+luajit main.lua
 pause
