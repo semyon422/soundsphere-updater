@@ -5,11 +5,6 @@
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/branch"
     },
     {
-        "path": "filelist.json",
-        "hash": "7a6f0bf6dc3eddf6ed131e40dc86433e",
-        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/filelist.json"
-    },
-    {
         "path": "launcher.bat",
         "hash": "a7d3cd0a284f52ad50d7a9fbaeb52818",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/launcher.bat"
@@ -21,7 +16,7 @@
     },
     {
         "path": "main.lua",
-        "hash": "96a8afd5d699aec744f810749a90e12a",
+        "hash": "6d41c1a0f1122107ceebc4f16caa87b8",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/main.lua"
     },
     {

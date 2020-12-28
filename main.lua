@@ -18,8 +18,8 @@ local download = function(url, path)
 end
 
 local update_launcher = function()
-	local response = download("https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/filelist.json", "-")
-	local server_filelist = json.decode(response)
+	local filelist_response = download("https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/filelist.json", "-")
+	local server_filelist = json.decode(filelist_response)
 
 	local client_filelist
 	do
@@ -71,6 +71,12 @@ local update_launcher = function()
 			updated = updated - 1
 		end
 	end
+
+
+	local f = io.open("filelist.json", "w")
+	f:write(filelist_response)
+	f:close()
+
 	return updated
 end
 
@@ -83,7 +89,8 @@ local generate_filelist = function()
 		if
 			not line:find(".+/%..+") and
 			not line:find(".+/soundsphere%-updater/soundsphere.+") and
-			not line:find("noautoupdate")
+			not line:find("noautoupdate") and
+			not line:find("filelist%.json")
 		then
 			pathlist[#pathlist + 1] = line:match("soundsphere%-updater/(.+)$")
 		end
