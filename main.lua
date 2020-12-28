@@ -145,7 +145,7 @@ local generateFileList = function()
 	local pathList = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/")
-		if not line:find(".+/%..+") then
+		if not line:find(".+/%..+") and not line:find(".+/soundsphere%-updater/soundsphere.+") then
 			print(line:match("soundsphere%-updater/(.+)$"))
 			pathList[#pathList + 1] = line:match("soundsphere%-updater/(.+)$")
 		end
@@ -155,7 +155,7 @@ local generateFileList = function()
 	for _, path in ipairs(pathList) do
 		local file = {}
 		file.path = path
-		file.url = "https://soundsphere.xyz/static/soundsphere-updater/" .. path
+		file.url = "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/" .. path
 
 		local f = io.open(path, "r")
 		local content = f:read("*all")
@@ -176,13 +176,12 @@ while true do
 
 	print("soundsphere updater")
 	print("1 - play")
-	print("2 - update using curl")
-	print("3 - git clone")
-	print("4 - git pull")
-	print("5 - git reset")
-	print("6 - select branch [" .. branch .. "]")
-	print("7 - generate filelist.json")
-	print("8 - exit")
+	print("2 - download")
+	print("3 - update")
+	print("4 - reset")
+	print("5 - select branch [" .. branch .. "]")
+	print("6 - generate filelist.json")
+	print("7 - exit")
 
 	local entry = tonumber(io.read())
 	os.execute("cls")
@@ -190,18 +189,17 @@ while true do
 	if entry == 1 then
 		os.execute(startPattern:format(branch, jit.arch == "x64" and 64 or 32))
 	elseif entry == 2 then
-		curlUpdate()
-	elseif entry == 3 then
 		pipe(gitClonePattern:format(branch, branch))
-	elseif entry == 4 then
+	elseif entry == 3 then
+		curlUpdate()
 		pipe(gitUpdatePattern:format(branch))
-	elseif entry == 5 then
+	elseif entry == 4 then
 		print("Are you sure? Type \"yes\"")
 		local answer = io.read()
 		if answer == "yes" then
 			pipe(gitResetPattern:format(branch))
 		end
-	elseif entry == 6 then
+	elseif entry == 5 then
 		local branches = getBranches()
 		for i = 1, #branches do
 			print(i .. " - " .. branches[i])
@@ -210,9 +208,9 @@ while true do
 		local file = io.open("branch", "w")
 		file:write(branch)
 		file:close()
-	elseif entry == 7 then
+	elseif entry == 6 then
 		generateFileList()
-	elseif entry == 8 then
+	elseif entry == 7 then
 		os.exit()
 	end
 end
