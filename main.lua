@@ -13,7 +13,7 @@ end
 
 local download = function(url, path)
 	print(("Downloading %s"):format(url))
-	local p = io.popen(("curl --header 'Cache-Control: no-cache' --silent --create-dirs --output %s %s"):format(path, url))
+	local p = io.popen(("curl --silent --create-dirs --output %s %s"):format(path, url))
 	return p:read("*all")
 end
 
