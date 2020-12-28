@@ -65,12 +65,8 @@ local update_launcher = function()
 	for _, file in ipairs(filelist) do
 		if file.hash_old and not file.hash then
 			os.remove(file.path)
-		elseif file.hash and not file.hash_old then
+		elseif file.hash and not file.hash_old or file.hash ~= file.hash_old then
 			download(file.url, file.path)
-		elseif file.hash ~= file.hash_old then
-			os.rename(file.path, file.path .. ".old")
-			download(file.url, file.path)
-			os.remove(file.path .. ".old")
 		else
 			updated = updated - 1
 		end
