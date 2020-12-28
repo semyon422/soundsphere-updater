@@ -19,7 +19,11 @@ end
 
 local update_launcher = function()
 	local filelist_response = download("https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/filelist.json", "-")
-	local server_filelist = json.decode(filelist_response)
+	local status, server_filelist = pcall(json.decode, filelist_response)
+
+	if not status then
+		return
+	end
 
 	local client_filelist
 	do
@@ -77,7 +81,7 @@ local update_launcher = function()
 	f:write(filelist_response)
 	f:close()
 
-	return updated
+	return updated > 0
 end
 
 local generate_filelist = function()
@@ -134,7 +138,11 @@ end
 
 local select_branch = function()
 	local response = download("https://api.github.com/repos/semyon422/soundsphere/branches", "-")
-	local branches = json.decode(response)
+	local status, branches = pcall(json.decode, response)
+
+	if not status then
+		return
+	end
 
 	for i = 1, #branches do
 		print(i .. " - " .. branches[i].name)
@@ -152,7 +160,7 @@ end
 local noautoupdate_file = io.open("noautoupdate", "r")
 if not noautoupdate_file then
 	local updated = update_launcher()
-	if updated > 0 then
+	if updated then
 		os.execute("cls")
 		dofile("main.lua")
 		os.exit()
