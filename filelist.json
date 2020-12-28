@@ -6,7 +6,7 @@
     },
     {
         "path": "filelist.json",
-        "hash": "dd279ae0d243bec5c4b9171b8c3cf4ad",
+        "hash": "7d4f1b0966930fe71703bb448e0bbad6",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/filelist.json"
     },
     {
@@ -21,7 +21,7 @@
     },
     {
         "path": "main.lua",
-        "hash": "d0234dba620f8e2a6dbda62d2bccb487",
+        "hash": "524c6cec82b1604b84c5f0b443bf202b",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/main.lua"
     },
     {
