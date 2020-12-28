@@ -52,7 +52,7 @@ local gitResetPattern = "cd soundsphere-%s && git reset --hard --recurse-submodu
 local startPattern = "@cd soundsphere-%s && call start-win%s.bat"
 
 local getServerFileList = function(self)
-	local response = download("https://soundsphere.xyz/static/soundsphere-updater/filelist.json", "-")
+	local response = download("https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/filelist.json", "-")
 	return json.decode(response)
 end
 
