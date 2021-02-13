@@ -5,9 +5,44 @@
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/branch"
     },
     {
+        "path": "busybox.exe",
+        "hash": "ec49e5816b41376c305a498382740687",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/busybox.exe"
+    },
+    {
+        "path": "curl-ca-bundle.crt",
+        "hash": "c726ae88fd600aa26df1d30f42b51fec",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/curl-ca-bundle.crt"
+    },
+    {
+        "path": "curl.exe",
+        "hash": "dded5f8ae5c57ccf61a7b2f109530455",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/curl.exe"
+    },
+    {
+        "path": "gitinstall.inf",
+        "hash": "28fbd767ca104b6aeeb12cd51406a409",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/gitinstall.inf"
+    },
+    {
+        "path": "json.lua",
+        "hash": "a4b0e052decd4e8d574bd8639901bbfa",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/json.lua"
+    },
+    {
         "path": "launcher.bat",
-        "hash": "a7d3cd0a284f52ad50d7a9fbaeb52818",
+        "hash": "42618f3f0491c3bc70f842d96c2826d5",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/launcher.bat"
+    },
+    {
+        "path": "launcher.sh",
+        "hash": "a11fe101cb4a49c3deb8c6fe25a63dc8",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/launcher.sh"
+    },
+    {
+        "path": "libcurl-x64.dll",
+        "hash": "9f7db82f6cead5f8b092ded5c0956f8c",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/libcurl-x64.dll"
     },
     {
         "path": "LICENSE",
@@ -15,48 +50,28 @@
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/LICENSE"
     },
     {
+        "path": "lua51.dll",
+        "hash": "33e9442704d23a7befcf89299fab36f5",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/lua51.dll"
+    },
+    {
+        "path": "luajit.exe",
+        "hash": "a3378c6d752d6a76b51d6c95d1c4fb3a",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/luajit.exe"
+    },
+    {
         "path": "main.lua",
-        "hash": "c11a523a951e84f3f4f03e8d5e226247",
+        "hash": "38f47d82133ba618b926796e9660020e",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/main.lua"
+    },
+    {
+        "path": "md5.lua",
+        "hash": "a2f21081aa8be55988c4eab52c39ec23",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/md5.lua"
     },
     {
         "path": "README.md",
         "hash": "7c546003a80d6037040863bb27c7e756",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/README.md"
-    },
-    {
-        "path": "curl/curl-ca-bundle.crt",
-        "hash": "c726ae88fd600aa26df1d30f42b51fec",
-        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/curl/curl-ca-bundle.crt"
-    },
-    {
-        "path": "curl/curl.exe",
-        "hash": "dded5f8ae5c57ccf61a7b2f109530455",
-        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/curl/curl.exe"
-    },
-    {
-        "path": "curl/libcurl-x64.dll",
-        "hash": "9f7db82f6cead5f8b092ded5c0956f8c",
-        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/curl/libcurl-x64.dll"
-    },
-    {
-        "path": "luajit/json.lua",
-        "hash": "a4b0e052decd4e8d574bd8639901bbfa",
-        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/luajit/json.lua"
-    },
-    {
-        "path": "luajit/lua51.dll",
-        "hash": "33e9442704d23a7befcf89299fab36f5",
-        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/luajit/lua51.dll"
-    },
-    {
-        "path": "luajit/luajit.exe",
-        "hash": "a3378c6d752d6a76b51d6c95d1c4fb3a",
-        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/luajit/luajit.exe"
-    },
-    {
-        "path": "luajit/md5.lua",
-        "hash": "a2f21081aa8be55988c4eab52c39ec23",
-        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/luajit/md5.lua"
     }
 ]

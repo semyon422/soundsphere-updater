@@ -1,3 +1,2 @@
-@echo off
+#!/bin/bash
 luajit main.lua
-pause

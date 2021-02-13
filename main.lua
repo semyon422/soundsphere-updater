@@ -1,5 +1,5 @@
-local json = require("luajit.json")
-local md5 = require("luajit.md5")
+local json = require("json")
+local md5 = require("md5")
 
 local branch = "master"
 local branch_file = io.open("branch", "r")
@@ -13,7 +13,7 @@ end
 
 local download = function(url, path)
 	print(("Downloading %s"):format(url))
-	local p = io.popen(("curl --silent --create-dirs --output %s %s"):format(path, url))
+	local p = io.popen(("curl --location --silent --create-dirs --output %s %s"):format(path, url))
 	return p:read("*all")
 end
 
@@ -72,7 +72,6 @@ local update_launcher = function()
 		end
 	end
 
-
 	local f = io.open("filelist.json", "w")
 	f:write(filelist_response)
 	f:close()
@@ -80,21 +79,26 @@ local update_launcher = function()
 	return updated > 0
 end
 
-local generate_filelist = function()
-	local p = io.popen("where /R . *")
-
+local find_files = function()
+	local p = io.popen((jit.os == "Windows" and "busybox " or "") .. "find . -not -type d")
 	local pathlist = {}
 	for line in p:lines() do
-		line = line:gsub("\\", "/")
+		line = line:gsub("\\", "/"):gsub("^%./", "")
 		if
-			not line:find(".+/%..+") and
-			not line:find(".+/soundsphere%-updater/soundsphere.+") and
-			not line:find("noautoupdate") and
-			not line:find("filelist%.json")
+			not line:find("^%..*") and
+			not line:find("^soundsphere.+") and
+			not line:find("noautoupdate", 1) and
+			not line:find("filelist.json", 1, true)
 		then
-			pathlist[#pathlist + 1] = line:match("soundsphere%-updater/(.+)$")
+			pathlist[#pathlist + 1] = line
 		end
 	end
+	p:close()
+	return pathlist
+end
+
+local generate_filelist = function()
+	local pathlist = find_files()
 
 	local filelist = {}
 	for _, path in ipairs(pathlist) do
@@ -117,19 +121,23 @@ local generate_filelist = function()
 end
 
 local start_game = function()
-	os.execute(("@cd soundsphere-%s && call start-win64.bat"):format(branch))
+	os.execute(("cd soundsphere-%s && call start-win64.bat"):format(branch))
 end
 
 local git_clone = function()
-	os.execute(("@git clone -b %s --recursive https://github.com/semyon422/soundsphere soundsphere-%s"):format(branch, branch))
+	os.execute(("git clone -b %s --recursive https://github.com/semyon422/soundsphere soundsphere-%s"):format(branch, branch))
 end
 
 local git_pull = function()
-	os.execute(("@cd soundsphere-%s && git pull --recurse-submodules"):format(branch))
+	os.execute(("cd soundsphere-%s && git pull --recurse-submodules"):format(branch))
 end
 
 local git_reset = function()
-	os.execute(("@cd soundsphere-%s && git reset --hard --recurse-submodules"):format(branch))
+	os.execute(("cd soundsphere-%s && git reset --hard --recurse-submodules"):format(branch))
+end
+
+local clear = function()
+	os.execute(jit.os == "Windows" and "cls" or "clear")
 end
 
 local select_branch = function()
@@ -153,50 +161,100 @@ local select_branch = function()
 	end
 end
 
+local get_repo_data = function()
+	local response = download("https://api.github.com/repos/semyon422/soundsphere", "-")
+	local status, data = pcall(json.decode, response)
+
+	if not status then
+		return {}
+	end
+
+	return data
+end
+
+local restart = function()
+	clear()
+	dofile("main.lua")
+	os.exit()
+end
+
+local install_git = function()
+	if jit.os == "Windows" then
+		download("https://github.com/git-for-windows/git/releases/download/v2.30.1.windows.1/Git-2.30.1-64-bit.exe", "gitinstall.exe")
+		print("Installing Git")
+		os.execute("gitinstall.exe /LOADINF=\"gitinstall.inf\" /VERYSILENT")
+		os.execute("del gitinstall.exe")
+		restart()
+	end
+end
+
+local is_git_installed = function()
+	local p = io.popen("git version")
+	local version = p:read("*all")
+	p:close()
+	return version:find("version")
+end
+
+local is_game_downloaded = function()
+	local p = io.popen((jit.os == "Windows" and "busybox " or "") .. "ls")
+	local files = p:read("*all")
+	p:close()
+	return files:find(("soundsphere-%s"):format(branch), 1, true)
+end
+
 local noautoupdate_file = io.open("noautoupdate", "r")
 if not noautoupdate_file then
 	local updated = update_launcher()
 	if updated then
-		os.execute("cls")
-		dofile("main.lua")
-		os.exit()
+		restart()
 	end
 else
 	noautoupdate_file:close()
 end
 
+local get_menu_items = function()
+	return {
+		{"play", start_game},
+		{"download " .. (is_game_downloaded() and "[downloaded]" or "[not downloaded]"), git_clone},
+		{"update", git_pull},
+		{"reset", function()
+			print("Are you sure? Type \"yes\"")
+			local answer = io.read()
+			if answer == "yes" then
+				git_reset()
+			end
+		end},
+		{"generate filelist", generate_filelist},
+		{"select branch [" .. branch .. "]", select_branch},
+		{"install git " .. (is_git_installed() and "[installed]" or "[not installed]"), install_git},
+		{"exit", os.exit},
+	}
+end
+
+local repo_data = get_repo_data()
+
 while true do
-	os.execute("cls")
+	clear()
 
 	print("soundsphere launcher")
-	print("1 - play")
-	print("2 - download")
-	print("3 - update")
-	print("4 - reset")
-	print("5 - select branch [" .. branch .. "]")
-	print("6 - generate filelist")
-	print("7 - exit")
+	print("")
+
+	if repo_data.name == "soundsphere" then
+		print(repo_data.name)
+		print(repo_data.description)
+		print(repo_data.homepage)
+	end
+	print("")
+
+	local menu_items = get_menu_items()
+	for i, item in ipairs(menu_items) do
+		print(i .. " - " .. item[1])
+	end
 
 	local entry = tonumber(io.read())
-	os.execute("cls")
+	clear()
 
-	if entry == 1 then
-		start_game()
-	elseif entry == 2 then
-		git_clone()
-	elseif entry == 3 then
-		git_pull()
-	elseif entry == 4 then
-		print("Are you sure? Type \"yes\"")
-		local answer = io.read()
-		if answer == "yes" then
-			git_reset()
-		end
-	elseif entry == 5 then
-		select_branch()
-	elseif entry == 6 then
-		generate_filelist()
-	elseif entry == 7 then
-		os.exit()
+	if menu_items[entry] then
+		menu_items[entry][2]()
 	end
 end
