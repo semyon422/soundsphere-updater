@@ -121,7 +121,11 @@ local generate_filelist = function()
 end
 
 local start_game = function()
-	os.execute(("cd soundsphere-%s && call start-win64.bat"):format(branch))
+	if jit.os == "Windows" then
+		os.execute(("cd soundsphere-%s && call start-win64.bat"):format(branch))
+	else
+		os.execute(("cd soundsphere-%s && ./start-linux64"):format(branch))
+	end
 end
 
 local git_clone = function()
