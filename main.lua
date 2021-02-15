@@ -193,7 +193,7 @@ local install_git = function()
 end
 
 local is_git_installed = function()
-	local p = io.popen("git version 2> nul")
+	local p = io.popen("git version 2> " .. (jit.os == "Windows" and "nul" or "/dev/null"))
 	local version = p:read("*all")
 	p:close()
 	return version:find("version")
