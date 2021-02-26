@@ -61,7 +61,7 @@
     },
     {
         "path": "main.lua",
-        "hash": "a8d64d67c492151dddad2dba856cccfb",
+        "hash": "ef7ad5fb4f081feeeaf8dbcf9d92dbb3",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/main.lua"
     },
     {
@@ -71,7 +71,7 @@
     },
     {
         "path": "README.md",
-        "hash": "7c546003a80d6037040863bb27c7e756",
+        "hash": "26dd84207ff8ef5155ec5bff9b3e343e",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/README.md"
     }
 ]
