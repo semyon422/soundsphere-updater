@@ -129,7 +129,7 @@ local start_game = function()
 end
 
 local git_clone = function()
-	os.execute(("git clone -b %s --recursive https://github.com/semyon422/soundsphere soundsphere-%s"):format(branch, branch))
+	os.execute(("git clone --depth 1 --recurse-submodules --shallow-submodules --single-branch --branch %s https://github.com/semyon422/soundsphere soundsphere-%s"):format(branch, branch))
 end
 
 local git_pull = function()
