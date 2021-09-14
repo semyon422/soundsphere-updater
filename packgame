@@ -1,0 +1,7 @@
+#!/bin/bash
+cd soundsphere
+rm game.love
+cd gamedir.love
+7z a -tzip game.love *
+mv game.love ../game.love
+cd ..

@@ -79,8 +79,12 @@ local update_launcher = function()
 	return updated > 0
 end
 
+local shell = function(command)
+	return (jit.os == "Windows" and "busybox " or "") .. command
+end
+
 local find_files = function()
-	local p = io.popen((jit.os == "Windows" and "busybox " or "") .. "find . -not -type d")
+	local p = io.popen(shell("find . -not -type d"))
 	local pathlist = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/"):gsub("^%./", "")
@@ -200,10 +204,24 @@ local is_git_installed = function()
 end
 
 local is_game_downloaded = function()
-	local p = io.popen((jit.os == "Windows" and "busybox " or "") .. "ls")
+	local p = io.popen(shell("ls"))
 	local files = p:read("*all")
 	p:close()
 	return files:find(("soundsphere-%s"):format(branch), 1, true)
+end
+
+local build = function()
+	os.execute(shell(("rm -rf %s"):format("soundsphere")))
+	os.execute(shell(("mkdir %s"):format("soundsphere")))
+	os.execute(shell(("cp -r %s %s"):format(("soundsphere-%s"):format(branch), "soundsphere/gamedir.love")))
+	os.execute(shell(("mv %s %s"):format("soundsphere/gamedir.love/bin", "soundsphere/bin")))
+	os.execute(shell(("mv %s %s"):format("soundsphere/gamedir.love/resources", "soundsphere/resources")))
+	os.execute(shell(("mv %s %s"):format("soundsphere/gamedir.love/userdata", "soundsphere/userdata")))
+	os.execute(shell(("find %s -name \".git\" -exec rm -rf {} +"):format("soundsphere")))
+	os.execute((jit.os == "Windows" and "packgame.bat" or "./packgame"))
+	os.execute(shell(("cp startgame/* %s"):format("soundsphere/")))
+	os.execute(shell(("cp soundsphere/gamedir.love/start* %s"):format("soundsphere/")))
+	os.execute(shell(("rm -rf %s"):format("soundsphere/gamedir.love")))
 end
 
 local noautoupdate_file = io.open("noautoupdate", "r")
@@ -228,6 +246,7 @@ local get_menu_items = function()
 				git_reset()
 			end
 		end},
+		{"build", build},
 		{"generate filelist", generate_filelist},
 		{"select branch [" .. branch .. "]", select_branch},
 		{"install git " .. (is_git_installed() and "[installed]" or "[not installed]"), install_git},
