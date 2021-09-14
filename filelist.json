@@ -1,7 +1,17 @@
 [
     {
+        "path": "7z.dll",
+        "hash": "1dea8a85eebbe6b5ef2a7af6b5626a8a",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/7z.dll"
+    },
+    {
+        "path": "7z.exe",
+        "hash": "b252ebbcd9d6fb904f3fa000556f993a",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/7z.exe"
+    },
+    {
         "path": "branch",
-        "hash": "eb0a191797624dd3a48fa681d3061212",
+        "hash": "bb906f0b06d62c9cbb31285a570451f9",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/branch"
     },
     {
@@ -61,7 +71,7 @@
     },
     {
         "path": "main.lua",
-        "hash": "ef7ad5fb4f081feeeaf8dbcf9d92dbb3",
+        "hash": "763f99be36ce792d41c1a39c58744171",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/main.lua"
     },
     {
@@ -70,8 +80,28 @@
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/md5.lua"
     },
     {
+        "path": "packgame",
+        "hash": "eee11c03d6d0969533eb9e643139f736",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/packgame"
+    },
+    {
+        "path": "packgame.bat",
+        "hash": "936c054840f882934fbe810b934ed846",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/packgame.bat"
+    },
+    {
         "path": "README.md",
         "hash": "26dd84207ff8ef5155ec5bff9b3e343e",
         "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/README.md"
+    },
+    {
+        "path": "startgame/conf.lua",
+        "hash": "0fa864febbe981cf440e9e406df4c5a6",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/startgame/conf.lua"
+    },
+    {
+        "path": "startgame/main.lua",
+        "hash": "3266e1ead5aa992fdd2b09d0ad1bb4ac",
+        "url": "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/startgame/main.lua"
     }
 ]
