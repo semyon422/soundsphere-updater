@@ -222,6 +222,33 @@ local build = function()
 	os.execute(shell(("cp startgame/* %s"):format("soundsphere/")))
 	os.execute(shell(("cp soundsphere/gamedir.love/start* %s"):format("soundsphere/")))
 	os.execute(shell(("rm -rf %s"):format("soundsphere/gamedir.love")))
+
+	local p = io.popen(shell(("find %s -not -type d"):format("soundsphere")))
+	local files = {}
+	for line in p:lines() do
+		line = line:gsub("\\", "/"):gsub("^%./", "")
+		if
+			not line:find("^%..*") and
+			not line:find("files.json", 1, true)
+		then
+			local file = {}
+			file.path = line:gsub("^soundsphere/", "")
+			file.url = "https://dl.soundsphere.xyz/" .. line:gsub("^soundsphere/", "")
+
+			local f = io.open(line, "r")
+			local content = f:read("*all")
+			f:close()
+			file.hash = md5.sumhexa(content)
+
+			files[#files + 1] = file
+		end
+	end
+	p:close()
+
+	local content = json.encode(files)
+	local f = io.open("soundsphere/files.json", "w")
+	f:write(content)
+	f:close()
 end
 
 local noautoupdate_file = io.open("noautoupdate", "r")
