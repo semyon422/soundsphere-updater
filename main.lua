@@ -1,5 +1,6 @@
 local json = require("json")
 local md5 = require("md5")
+local crc32 = require("crc32")
 
 local branch = "master"
 local branch_file = io.open("branch", "r")
@@ -238,7 +239,7 @@ local build = function()
 			local f = io.open(line, "r")
 			local content = f:read("*all")
 			f:close()
-			file.hash = md5.sumhexa(content)
+			file.hash = crc32.hash(content)
 
 			files[#files + 1] = file
 		end
