@@ -1,13 +1,14 @@
 local json = require("json")
 local md5 = require("md5")
 local crc32 = require("crc32")
+local serpent = require("serpent")
 
 local branch = "master"
-local branch_file = io.open("branch", "r")
+local branch_file = io.open("branch", "rb")
 if branch_file then
 	branch = branch_file:read("*all")
 else
-	branch_file = io.open("branch", "w")
+	branch_file = io.open("branch", "wb")
 	branch_file:write(branch)
 	branch_file:close()
 end
@@ -28,7 +29,7 @@ local update_launcher = function()
 
 	local client_filelist
 	do
-		local f = io.open("filelist.json", "r")
+		local f = io.open("filelist.json", "rb")
 
 		if not f then
 			client_filelist = {}
@@ -73,7 +74,7 @@ local update_launcher = function()
 		end
 	end
 
-	local f = io.open("filelist.json", "w")
+	local f = io.open("filelist.json", "wb")
 	f:write(filelist_response)
 	f:close()
 
@@ -111,7 +112,7 @@ local generate_filelist = function()
 		file.path = path
 		file.url = "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/" .. path
 
-		local f = io.open(path, "r")
+		local f = io.open(path, "rb")
 		local content = f:read("*all")
 		f:close()
 		file.hash = md5.sumhexa(content)
@@ -120,7 +121,7 @@ local generate_filelist = function()
 	end
 
 	local content = json.encode(filelist)
-	local f = io.open("filelist.json", "w")
+	local f = io.open("filelist.json", "wb")
 	f:write(content)
 	f:close()
 end
@@ -146,7 +147,8 @@ local git_reset = function()
 end
 
 local clear = function()
-	os.execute(jit.os == "Windows" and "cls" or "clear")
+	print(("-"):rep(80))
+	-- os.execute(jit.os == "Windows" and "cls" or "clear")
 end
 
 local select_branch = function()
@@ -164,7 +166,7 @@ local select_branch = function()
 	local branch_index = tonumber(io.read())
 	if branch_index then
 		branch = branches[branch_index].name
-		local file = io.open("branch", "w")
+		local file = io.open("branch", "wb")
 		file:write(branch)
 		file:close()
 	end
@@ -219,24 +221,24 @@ local build = function()
 	os.execute(shell(("mv %s %s"):format("soundsphere/gamedir.love/resources", "soundsphere/resources")))
 	os.execute(shell(("mv %s %s"):format("soundsphere/gamedir.love/userdata", "soundsphere/userdata")))
 	os.execute(shell(("find %s -name \".git\" -exec rm -rf {} +"):format("soundsphere")))
-	os.execute((jit.os == "Windows" and "packgame.bat" or "./packgame"))
+
+	os.execute("7z a -tzip soundsphere/game.love ./soundsphere/gamedir.love/*")
+
 	os.execute(shell(("cp startgame/* %s"):format("soundsphere/")))
 	os.execute(shell(("cp soundsphere/gamedir.love/start* %s"):format("soundsphere/")))
+	os.execute(shell(("rm -rf %s"):format("soundsphere/gamedir.love")))
 	os.execute(shell(("rm -rf %s"):format("soundsphere/gamedir.love")))
 
 	local p = io.popen(shell(("find %s -not -type d"):format("soundsphere")))
 	local files = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/"):gsub("^%./", "")
-		if
-			not line:find("^%..*") and
-			not line:find("files.json", 1, true)
-		then
+		if not line:find("^%..*") then
 			local file = {}
 			file.path = line:gsub("^soundsphere/", "")
 			file.url = "https://dl.soundsphere.xyz/" .. line:gsub("^soundsphere/", "")
 
-			local f = io.open(line, "r")
+			local f = io.open(line, "rb")
 			local content = f:read("*all")
 			f:close()
 			file.hash = crc32.hash(content)
@@ -246,13 +248,24 @@ local build = function()
 	end
 	p:close()
 
+	local content = ("return %s\n"):format(serpent.block(files, {
+		indent = "\t",
+		comment = false,
+		sortkeys = true,
+	}))
+	local f = io.open("soundsphere/userdata/files.lua", "wb")
+	f:write(content)
+	f:close()
+	
+	os.execute("7z a -tzip soundsphere/soundsphere.zip soundsphere/")
+
 	local content = json.encode(files)
-	local f = io.open("soundsphere/files.json", "w")
+	local f = io.open("soundsphere/files.json", "wb")
 	f:write(content)
 	f:close()
 end
 
-local noautoupdate_file = io.open("noautoupdate", "r")
+local noautoupdate_file = io.open("noautoupdate", "rb")
 if not noautoupdate_file then
 	local updated = update_launcher()
 	if updated then
