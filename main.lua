@@ -92,7 +92,7 @@ local find_files = function()
 		line = line:gsub("\\", "/"):gsub("^%./", "")
 		if
 			not line:find("^%..*") and
-			not line:find("^soundsphere.+") and
+			not line:find("^soundsphere.*") and
 			not line:find("noautoupdate", 1) and
 			not line:find("filelist.json", 1, true)
 		then
@@ -128,9 +128,9 @@ end
 
 local start_game = function()
 	if jit.os == "Windows" then
-		os.execute(("cd soundsphere-%s && call start-win64.bat"):format(branch))
+		os.execute(("cd soundsphere-%s && call start-game-win64.bat"):format(branch))
 	else
-		os.execute(("cd soundsphere-%s && ./start-linux64"):format(branch))
+		os.execute(("cd soundsphere-%s && ./start-game-linux64"):format(branch))
 	end
 end
 
