@@ -213,7 +213,7 @@ local is_game_downloaded = function()
 	return files:find(("soundsphere-%s"):format(branch), 1, true)
 end
 
-local build = function()
+local build_repo = function()
 	os.execute(shell(("rm -rf %s"):format("soundsphere")))
 	os.execute(shell(("mkdir %s"):format("soundsphere")))
 	os.execute(shell(("cp -r %s %s"):format(("soundsphere-%s"):format(branch), "soundsphere/gamedir.love")))
@@ -256,13 +256,15 @@ local build = function()
 	local f = io.open("soundsphere/userdata/files.lua", "wb")
 	f:write(content)
 	f:close()
-	
-	os.execute("7z a -tzip soundsphere/soundsphere.zip soundsphere/")
 
 	local content = json.encode(files)
 	local f = io.open("soundsphere/files.json", "wb")
 	f:write(content)
 	f:close()
+end
+
+local build_zip = function()
+	os.execute("7z a -tzip soundsphere.zip soundsphere/")
 end
 
 local noautoupdate_file = io.open("noautoupdate", "rb")
@@ -287,7 +289,8 @@ local get_menu_items = function()
 				git_reset()
 			end
 		end},
-		{"build", build},
+		{"build repo", build_repo},
+		{"build zip", build_zip},
 		{"generate filelist", generate_filelist},
 		{"select branch [" .. branch .. "]", select_branch},
 		{"install git " .. (is_git_installed() and "[installed]" or "[not installed]"), install_git},
