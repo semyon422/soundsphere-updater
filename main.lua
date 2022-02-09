@@ -225,7 +225,7 @@ local build_repo = function()
 	os.execute("7z a -tzip soundsphere/game.love ./soundsphere/gamedir.love/*")
 
 	os.execute(shell(("cp startgame/* %s"):format("soundsphere/")))
-	os.execute(shell(("cp soundsphere/gamedir.love/start-game* %s"):format("soundsphere/")))
+	os.execute(shell(("cp soundsphere/gamedir.love/game* %s"):format("soundsphere/")))
 	os.execute(shell(("rm -rf %s"):format("soundsphere/gamedir.love")))
 	os.execute(shell(("rm -rf %s"):format("soundsphere/gamedir.love")))
 
