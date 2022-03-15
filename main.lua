@@ -264,6 +264,7 @@ local build_repo = function()
 end
 
 local build_zip = function()
+	os.execute("rm soundsphere.zip")
 	os.execute("7z a -tzip soundsphere.zip soundsphere/")
 end
 
