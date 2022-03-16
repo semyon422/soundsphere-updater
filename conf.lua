@@ -1,6 +1,6 @@
 local mainLoop
 
-local function run()
+function love.run()
 	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
 	if love.timer then love.timer.step() end
 
@@ -9,21 +9,24 @@ local function run()
 	end
 end
 
-local function load(...)
+function love.load(...)
 	local fileData = assert(love.filesystem.newFileData("game.love"))
 	assert(love.filesystem.mount(fileData, ""))
 
 	package.loaded.main = nil
 	package.loaded.conf = nil
 
+	local love_load = love.load
+
 	love.conf = nil
 	love.handlers = nil
 	love.init()
-	if love.load ~= load then
+	if love.load ~= love_load then
 		love.load(...)
 	end
 	mainLoop = love.run()
 end
 
-love.load = load
-love.run = run
+function love.conf(t)
+	t.window = false
+end

@@ -12,6 +12,8 @@ else
 	branch_file:close()
 end
 
+local dev_null = jit.os == "Windows" and "nul" or "/dev/null"
+
 local function get_repo()
 	return ("soundsphere-%s"):format(branch)
 end
@@ -26,16 +28,35 @@ local function shell(command)
 	return (jit.os == "Windows" and "busybox " or "") .. command
 end
 
+local function repo_shell(command)
+	return ("cd %s && %s"):format(get_repo(), command)
+end
+
+local function popen_read(command)
+	local p = io.popen(command .. " 2> " .. dev_null)
+	local content = p:read("*all")
+	p:close()
+	return content
+end
+
 local function git_clone()
 	os.execute(("git clone --depth 1 --recurse-submodules --shallow-submodules --single-branch --branch %s https://github.com/semyon422/soundsphere %s"):format(branch, get_repo()))
 end
 
 local function git_pull()
-	os.execute(("cd %s && git pull --recurse-submodules"):format(get_repo()))
+	os.execute(repo_shell("git pull --recurse-submodules"))
 end
 
 local function git_reset()
-	os.execute(("cd %s && git reset --hard --recurse-submodules"):format(get_repo()))
+	os.execute(repo_shell("git reset --hard --recurse-submodules"))
+end
+
+local function git_log_date()
+	return popen_read(repo_shell("git log -1 --format=%cd")):match("^%s*(.+)%s*\n.*$")
+end
+
+local function git_log_commit()
+	return popen_read(repo_shell("git log -1 --format=%H")):match("^%s*(.+)%s*\n.*$")
 end
 
 local function clear()
@@ -86,17 +107,11 @@ local function install_git()
 end
 
 local function is_git_installed()
-	local p = io.popen("git version 2> " .. (jit.os == "Windows" and "nul" or "/dev/null"))
-	local version = p:read("*all")
-	p:close()
-	return version:find("version")
+	return popen_read("git version"):find("version")
 end
 
 local function is_game_downloaded()
-	local p = io.popen(shell("ls"))
-	local files = p:read("*all")
-	p:close()
-	return files:find(get_repo(), 1, true)
+	return popen_read(shell("ls")):find(get_repo(), 1, true)
 end
 
 local function rm(path)
@@ -128,6 +143,14 @@ local function write(path, content)
 	f:close()
 end
 
+local function serpent_block(t)
+	return ("return %s\n"):format(serpent.block(t, {
+		indent = "\t",
+		comment = false,
+		sortkeys = true,
+	}))
+end
+
 local function build_repo()
 	rm("soundsphere")
 	md("soundsphere")
@@ -136,10 +159,15 @@ local function build_repo()
 	mv("soundsphere/gamedir.love/resources", "soundsphere/resources")
 	mv("soundsphere/gamedir.love/userdata", "soundsphere/userdata")
 
+	write("soundsphere/gamedir.love/version.lua", serpent_block({
+		date = git_log_date(),
+		commit = git_log_commit(),
+	}))
+
 	os.execute(shell('find soundsphere -name ".git" -exec rm -rf {} +'))
 	os.execute("7z a -tzip soundsphere/game.love ./soundsphere/gamedir.love/*")
 
-	cp("startgame/*", "soundsphere/")
+	cp("conf.lua", "soundsphere/")
 	cp("soundsphere/gamedir.love/game*", "soundsphere/")
 	rm("soundsphere/gamedir.love")
 
@@ -157,12 +185,7 @@ local function build_repo()
 	end
 	p:close()
 
-	write("soundsphere/userdata/files.lua", ("return %s\n"):format(serpent.block(files, {
-		indent = "\t",
-		comment = false,
-		sortkeys = true,
-	})))
-
+	write("soundsphere/userdata/files.lua", serpent_block(files))
 	write("files.json", json.encode(files))
 end
 
