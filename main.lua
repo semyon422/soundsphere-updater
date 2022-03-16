@@ -1,5 +1,4 @@
 local json = require("json")
-local md5 = require("md5")
 local crc32 = require("crc32")
 local serpent = require("serpent")
 
@@ -13,145 +12,38 @@ else
 	branch_file:close()
 end
 
-local download = function(url, path)
+local function get_repo()
+	return ("soundsphere-%s"):format(branch)
+end
+
+local function download(url, path)
 	print(("Downloading %s"):format(url))
 	local p = io.popen(("curl --location --silent --create-dirs --output %s %s"):format(path, url))
 	return p:read("*all")
 end
 
-local update_launcher = function()
-	local filelist_response = download("https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/filelist.json", "-")
-	local status, server_filelist = pcall(json.decode, filelist_response)
-
-	if not status then
-		return
-	end
-
-	local client_filelist
-	do
-		local f = io.open("filelist.json", "rb")
-
-		if not f then
-			client_filelist = {}
-		else
-			local content = f:read("*all")
-			f:close()
-			client_filelist = json.decode(content)
-		end
-	end
-
-	local filemap = {}
-	for _, file in ipairs(server_filelist) do
-		local path = file.path
-		filemap[path] = filemap[path] or {}
-		filemap[path].hash = file.hash
-		filemap[path].path = path
-		filemap[path].url = file.url
-	end
-	for _, file in ipairs(client_filelist) do
-		local path = file.path
-		filemap[path] = filemap[path] or {}
-		filemap[path].hash_old = file.hash
-		filemap[path].path = path
-	end
-
-	local filelist = {}
-	for _, file in pairs(filemap) do
-		filelist[#filelist + 1] = file
-	end
-	table.sort(filelist, function(a, b)
-		return a.path < b.path
-	end)
-
-	local updated = #filelist
-	for _, file in ipairs(filelist) do
-		if file.hash_old and not file.hash then
-			os.remove(file.path)
-		elseif file.hash and not file.hash_old or file.hash ~= file.hash_old then
-			download(file.url, file.path)
-		else
-			updated = updated - 1
-		end
-	end
-
-	local f = io.open("filelist.json", "wb")
-	f:write(filelist_response)
-	f:close()
-
-	return updated > 0
-end
-
-local shell = function(command)
+local function shell(command)
 	return (jit.os == "Windows" and "busybox " or "") .. command
 end
 
-local find_files = function()
-	local p = io.popen(shell("find . -not -type d"))
-	local pathlist = {}
-	for line in p:lines() do
-		line = line:gsub("\\", "/"):gsub("^%./", "")
-		if
-			not line:find("^%..*") and
-			not line:find("^soundsphere.*") and
-			not line:find("noautoupdate", 1) and
-			not line:find("filelist.json", 1, true)
-		then
-			pathlist[#pathlist + 1] = line
-		end
-	end
-	p:close()
-	return pathlist
+local function git_clone()
+	os.execute(("git clone --depth 1 --recurse-submodules --shallow-submodules --single-branch --branch %s https://github.com/semyon422/soundsphere %s"):format(branch, get_repo()))
 end
 
-local generate_filelist = function()
-	local pathlist = find_files()
-
-	local filelist = {}
-	for _, path in ipairs(pathlist) do
-		local file = {}
-		file.path = path
-		file.url = "https://raw.githubusercontent.com/semyon422/soundsphere-updater/master/" .. path
-
-		local f = io.open(path, "rb")
-		local content = f:read("*all")
-		f:close()
-		file.hash = md5.sumhexa(content)
-
-		filelist[#filelist + 1] = file
-	end
-
-	local content = json.encode(filelist)
-	local f = io.open("filelist.json", "wb")
-	f:write(content)
-	f:close()
+local function git_pull()
+	os.execute(("cd %s && git pull --recurse-submodules"):format(get_repo()))
 end
 
-local start_game = function()
-	if jit.os == "Windows" then
-		os.execute(("cd soundsphere-%s && call start-game-win64.bat"):format(branch))
-	else
-		os.execute(("cd soundsphere-%s && ./start-game-linux64"):format(branch))
-	end
+local function git_reset()
+	os.execute(("cd %s && git reset --hard --recurse-submodules"):format(get_repo()))
 end
 
-local git_clone = function()
-	os.execute(("git clone --depth 1 --recurse-submodules --shallow-submodules --single-branch --branch %s https://github.com/semyon422/soundsphere soundsphere-%s"):format(branch, branch))
-end
-
-local git_pull = function()
-	os.execute(("cd soundsphere-%s && git pull --recurse-submodules"):format(branch))
-end
-
-local git_reset = function()
-	os.execute(("cd soundsphere-%s && git reset --hard --recurse-submodules"):format(branch))
-end
-
-local clear = function()
+local function clear()
 	print(("-"):rep(80))
 	-- os.execute(jit.os == "Windows" and "cls" or "clear")
 end
 
-local select_branch = function()
+local function select_branch()
 	local response = download("https://api.github.com/repos/semyon422/soundsphere/branches", "-")
 	local status, branches = pcall(json.decode, response)
 
@@ -172,7 +64,7 @@ local select_branch = function()
 	end
 end
 
-local get_repo_data = function()
+local function get_repo_data()
 	local response = download("https://api.github.com/repos/semyon422/soundsphere", "-")
 	local status, data = pcall(json.decode, response)
 
@@ -183,84 +75,95 @@ local get_repo_data = function()
 	return data
 end
 
-local restart = function()
-	clear()
-	dofile("main.lua")
-	os.exit()
-end
-
-local install_git = function()
-	if jit.os == "Windows" then
-		download("https://github.com/git-for-windows/git/releases/download/v2.30.1.windows.1/Git-2.30.1-64-bit.exe", "gitinstall.exe")
-		print("Installing Git")
-		os.execute("gitinstall.exe /LOADINF=\"gitinstall.inf\" /VERYSILENT")
-		os.execute("del gitinstall.exe")
-		restart()
+local function install_git()
+	if jit.os ~= "Windows" then
+		return
 	end
+	download("https://github.com/git-for-windows/git/releases/download/v2.30.1.windows.1/Git-2.30.1-64-bit.exe", "gitinstall.exe")
+	print("Installing Git")
+	os.execute("gitinstall.exe /LOADINF=\"gitinstall.inf\" /VERYSILENT")
+	os.execute("del gitinstall.exe")
 end
 
-local is_git_installed = function()
+local function is_git_installed()
 	local p = io.popen("git version 2> " .. (jit.os == "Windows" and "nul" or "/dev/null"))
 	local version = p:read("*all")
 	p:close()
 	return version:find("version")
 end
 
-local is_game_downloaded = function()
+local function is_game_downloaded()
 	local p = io.popen(shell("ls"))
 	local files = p:read("*all")
 	p:close()
-	return files:find(("soundsphere-%s"):format(branch), 1, true)
+	return files:find(get_repo(), 1, true)
 end
 
-local build_repo = function()
-	os.execute(shell(("rm -rf %s"):format("soundsphere")))
-	os.execute(shell(("mkdir %s"):format("soundsphere")))
-	os.execute(shell(("cp -r %s %s"):format(("soundsphere-%s"):format(branch), "soundsphere/gamedir.love")))
-	os.execute(shell(("mv %s %s"):format("soundsphere/gamedir.love/bin", "soundsphere/bin")))
-	os.execute(shell(("mv %s %s"):format("soundsphere/gamedir.love/resources", "soundsphere/resources")))
-	os.execute(shell(("mv %s %s"):format("soundsphere/gamedir.love/userdata", "soundsphere/userdata")))
-	os.execute(shell(("find %s -name \".git\" -exec rm -rf {} +"):format("soundsphere")))
+local function rm(path)
+	os.execute(shell(("rm -rf %s"):format(path)))
+end
 
+local function md(path)
+	os.execute(shell(("mkdir %s"):format(path)))
+end
+
+local function mv(src, dst)
+	os.execute(shell(("mv %s %s"):format(src, dst)))
+end
+
+local function cp(src, dst)
+	os.execute(shell(("cp -r %s %s"):format(src, dst)))
+end
+
+local function read(path)
+	local f = io.open(path, "rb")
+	local content = f:read("*all")
+	f:close()
+	return content
+end
+
+local function write(path, content)
+	local f = io.open(path, "wb")
+	f:write(content)
+	f:close()
+end
+
+local function build_repo()
+	rm("soundsphere")
+	md("soundsphere")
+	cp(get_repo(), "soundsphere/gamedir.love")
+	mv("soundsphere/gamedir.love/bin", "soundsphere/bin")
+	mv("soundsphere/gamedir.love/resources", "soundsphere/resources")
+	mv("soundsphere/gamedir.love/userdata", "soundsphere/userdata")
+
+	os.execute(shell('find soundsphere -name ".git" -exec rm -rf {} +'))
 	os.execute("7z a -tzip soundsphere/game.love ./soundsphere/gamedir.love/*")
 
-	os.execute(shell(("cp startgame/* %s"):format("soundsphere/")))
-	os.execute(shell(("cp soundsphere/gamedir.love/game* %s"):format("soundsphere/")))
-	os.execute(shell(("rm -rf %s"):format("soundsphere/gamedir.love")))
-	os.execute(shell(("rm -rf %s"):format("soundsphere/gamedir.love")))
+	cp("startgame/*", "soundsphere/")
+	cp("soundsphere/gamedir.love/game*", "soundsphere/")
+	rm("soundsphere/gamedir.love")
 
-	local p = io.popen(shell(("find %s -not -type d"):format("soundsphere")))
+	local p = io.popen(shell("find soundsphere -not -type d"))
 	local files = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/"):gsub("^%./", "")
 		if not line:find("^%..*") then
-			local file = {}
-			file.path = line:gsub("^soundsphere/", "")
-			file.url = "https://dl.soundsphere.xyz/" .. line:gsub("^soundsphere/", "")
-
-			local f = io.open(line, "rb")
-			local content = f:read("*all")
-			f:close()
-			file.hash = crc32.hash(content)
-
-			files[#files + 1] = file
+			files[#files + 1] = {
+				path = line:gsub("^soundsphere/", ""),
+				url = "https://dl.soundsphere.xyz/" .. line:gsub("^soundsphere/", ""),
+				hash = crc32.hash(read(line)),
+			}
 		end
 	end
 	p:close()
 
-	local content = ("return %s\n"):format(serpent.block(files, {
+	write("soundsphere/userdata/files.lua", ("return %s\n"):format(serpent.block(files, {
 		indent = "\t",
 		comment = false,
 		sortkeys = true,
-	}))
-	local f = io.open("soundsphere/userdata/files.lua", "wb")
-	f:write(content)
-	f:close()
+	})))
 
-	local content = json.encode(files)
-	local f = io.open("soundsphere/files.json", "wb")
-	f:write(content)
-	f:close()
+	write("files.json", json.encode(files))
 end
 
 local build_zip = function()
@@ -268,19 +171,8 @@ local build_zip = function()
 	os.execute("7z a -tzip soundsphere.zip soundsphere/")
 end
 
-local noautoupdate_file = io.open("noautoupdate", "rb")
-if not noautoupdate_file then
-	local updated = update_launcher()
-	if updated then
-		restart()
-	end
-else
-	noautoupdate_file:close()
-end
-
-local get_menu_items = function()
+local function get_menu_items()
 	return {
-		{"play", start_game},
 		{"download " .. (is_game_downloaded() and "[downloaded]" or "[not downloaded]"), git_clone},
 		{"update", git_pull},
 		{"reset", function()
@@ -292,7 +184,6 @@ local get_menu_items = function()
 		end},
 		{"build repo", build_repo},
 		{"build zip", build_zip},
-		{"generate filelist", generate_filelist},
 		{"select branch [" .. branch .. "]", select_branch},
 		{"install git " .. (is_git_installed() and "[installed]" or "[not installed]"), install_git},
 		{"exit", os.exit},
@@ -319,6 +210,7 @@ while true do
 		print(i .. " - " .. item[1])
 	end
 
+	io.write("> ")
 	local entry = tonumber(io.read())
 	clear()
 
