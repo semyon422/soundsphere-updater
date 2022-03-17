@@ -154,13 +154,13 @@ local function serpent_block(t)
 	}))
 end
 
-local function write_configs()
-	write("soundsphere/gamedir.love/version.lua", serpent_block({
+local function write_configs(gamedir)
+	write(gamedir .. "/version.lua", serpent_block({
 		date = git_log_date(),
 		commit = git_log_commit(),
 	}))
 
-	local online_path = "soundsphere/gamedir.love/sphere/models/ConfigModel/online.lua"
+	local online_path = gamedir .. "/sphere/models/ConfigModel/online.lua"
 	local online = loadfile(online_path)()
 	online.host = config.game.api
 	online.update = config.game.repo .. "/files.json"
@@ -168,43 +168,44 @@ local function write_configs()
 end
 
 local function build_repo()
-	rm("soundsphere")
-	md("soundsphere")
-	cp(get_repo(), "soundsphere/gamedir.love")
-	mv("soundsphere/gamedir.love/bin", "soundsphere/bin")
-	mv("soundsphere/gamedir.love/resources", "soundsphere/resources")
-	mv("soundsphere/gamedir.love/userdata", "soundsphere/userdata")
+	md("repo")
 
-	write_configs()
+	rm("repo/soundsphere")
+	md("repo/soundsphere")
 
-	os.execute(shell('find soundsphere -name ".git" -exec rm -rf {} +'))
-	os.execute("7z a -tzip soundsphere/game.love ./soundsphere/gamedir.love/*")
+	cp(get_repo(), "repo/soundsphere/gamedir.love")
+	mv("repo/soundsphere/gamedir.love/{bin,resources,userdata}", "repo/soundsphere/")
 
-	cp("conf.lua", "soundsphere/")
-	cp("soundsphere/gamedir.love/game*", "soundsphere/")
-	rm("soundsphere/gamedir.love")
+	write_configs("repo/soundsphere/gamedir.love")
 
-	local p = io.popen(shell("find soundsphere -not -type d"))
+	os.execute(shell('find repo/soundsphere -name ".git" -exec rm -rf {} +'))
+	os.execute("7z a -tzip repo/soundsphere/game.love ./repo/soundsphere/gamedir.love/*")
+
+	cp("conf.lua", "repo/soundsphere/")
+	cp("repo/soundsphere/gamedir.love/game*", "repo/soundsphere/")
+	rm("repo/soundsphere/gamedir.love")
+
+	local p = io.popen(shell("find repo/soundsphere -not -type d"))
 	local files = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/"):gsub("^%./", "")
 		if not line:find("^%..*") then
 			files[#files + 1] = {
-				path = line:gsub("^soundsphere/", ""),
-				url = config.game.repo .. line:gsub("^soundsphere", ""),
+				path = line:gsub("^repo/soundsphere/", ""),
+				url = config.game.repo .. line:gsub("^repo", ""),
 				hash = crc32.hash(read(line)),
 			}
 		end
 	end
 	p:close()
 
-	write("soundsphere/userdata/files.lua", serpent_block(files))
-	write("files.json", json.encode(files))
+	write("repo/soundsphere/userdata/files.lua", serpent_block(files))
+	write("repo/files.json", json.encode(files))
 end
 
 local build_zip = function()
-	os.execute("rm soundsphere.zip")
-	os.execute("7z a -tzip soundsphere.zip soundsphere/")
+	os.execute("rm repo/soundsphere.zip")
+	os.execute("7z a -tzip repo/soundsphere.zip ./repo/soundsphere")
 end
 
 local function get_menu_items()
