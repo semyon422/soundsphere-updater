@@ -174,7 +174,9 @@ local function build_repo()
 	md("repo/soundsphere")
 
 	cp(get_repo(), "repo/soundsphere/gamedir.love")
-	mv("repo/soundsphere/gamedir.love/{bin,resources,userdata}", "repo/soundsphere/")
+	for _, dir in ipairs({"bin", "resources", "userdata"}) do
+		mv("repo/soundsphere/gamedir.love/" .. dir, "repo/soundsphere/")
+	end
 
 	write_configs("repo/soundsphere/gamedir.love")
 
