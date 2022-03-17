@@ -1,6 +1,7 @@
 local json = require("json")
 local crc32 = require("crc32")
 local serpent = require("serpent")
+local config = require("config")
 
 local branch = "master"
 local branch_file = io.open("branch", "rb")
@@ -40,7 +41,9 @@ local function popen_read(command)
 end
 
 local function git_clone()
-	os.execute(("git clone --depth 1 --recurse-submodules --shallow-submodules --single-branch --branch %s https://github.com/semyon422/soundsphere %s"):format(branch, get_repo()))
+	os.execute(("git clone --depth 1 --recurse-submodules --shallow-submodules --single-branch --branch %s %s %s"):format(
+		branch, config.github.repo, get_repo()
+	))
 end
 
 local function git_pull()
@@ -65,7 +68,7 @@ local function clear()
 end
 
 local function select_branch()
-	local response = download("https://api.github.com/repos/semyon422/soundsphere/branches", "-")
+	local response = download(config.github.repo .. "/branches", "-")
 	local status, branches = pcall(json.decode, response)
 
 	if not status then
@@ -86,7 +89,7 @@ local function select_branch()
 end
 
 local function get_repo_data()
-	local response = download("https://api.github.com/repos/semyon422/soundsphere", "-")
+	local response = download(config.github.repo, "-")
 	local status, data = pcall(json.decode, response)
 
 	if not status then
@@ -151,6 +154,19 @@ local function serpent_block(t)
 	}))
 end
 
+local function write_configs()
+	write("soundsphere/gamedir.love/version.lua", serpent_block({
+		date = git_log_date(),
+		commit = git_log_commit(),
+	}))
+
+	local online_path = "soundsphere/gamedir.love/sphere/models/ConfigModel/online.lua"
+	local online = loadfile(online_path)()
+	online.host = config.game.api
+	online.update = config.game.repo .. "/files.json"
+	write(online_path, serpent_block(online))
+end
+
 local function build_repo()
 	rm("soundsphere")
 	md("soundsphere")
@@ -159,10 +175,7 @@ local function build_repo()
 	mv("soundsphere/gamedir.love/resources", "soundsphere/resources")
 	mv("soundsphere/gamedir.love/userdata", "soundsphere/userdata")
 
-	write("soundsphere/gamedir.love/version.lua", serpent_block({
-		date = git_log_date(),
-		commit = git_log_commit(),
-	}))
+	write_configs()
 
 	os.execute(shell('find soundsphere -name ".git" -exec rm -rf {} +'))
 	os.execute("7z a -tzip soundsphere/game.love ./soundsphere/gamedir.love/*")
@@ -178,7 +191,7 @@ local function build_repo()
 		if not line:find("^%..*") then
 			files[#files + 1] = {
 				path = line:gsub("^soundsphere/", ""),
-				url = "https://dl.soundsphere.xyz/" .. line:gsub("^soundsphere/", ""),
+				url = config.game.repo .. line:gsub("^soundsphere", ""),
 				hash = crc32.hash(read(line)),
 			}
 		end
@@ -211,6 +224,10 @@ local function get_menu_items()
 		{"install git " .. (is_git_installed() and "[installed]" or "[not installed]"), install_git},
 		{"exit", os.exit},
 	}
+end
+
+if arg[1] == "build_repo" then
+	return build_repo()
 end
 
 local repo_data = get_repo_data()
