@@ -28,5 +28,7 @@ function love.load(...)
 end
 
 function love.conf(t)
-	t.window = false
+	t.audio = nil
+	t.window = nil
+	t.modules = {}
 end
