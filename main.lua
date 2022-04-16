@@ -125,6 +125,10 @@ local function rm(path)
 	os.execute(shell(("rm -rf %s"):format(path)))
 end
 
+local function rm_find(root, path)
+	os.execute(shell(('find %q -name %q -exec rm -rf {} +'):format(root, path)))
+end
+
 local function md(path)
 	os.execute(shell(("mkdir %s"):format(path)))
 end
@@ -171,25 +175,60 @@ local function write_configs(gamedir)
 	write(online_path, serpent_block(online))
 end
 
+local extract_list = {"bin", "resources", "userdata"}
+local delete_list = {
+	"cimgui-love/cimgui",
+	"cimgui-love/cparser",
+	"inspect/rockspecs",
+	"inspect/spec",
+	"json/bench",
+	"json/test",
+	"lua-toml/rockspecs",
+	"lua-toml/spec",
+	"md5/rockspecs",
+	"md5/spec",
+	"serpent/t",
+	"tinyyaml/rockspec",
+	"tinyyaml/spec",
+	"tween/rockspecs",
+	"tween/spec",
+	"s3dc/screenshot.png",
+}
+local delete_recursive_list = {
+	".git",
+	"*.rockspec",
+	"*_spec.lua",
+	"LICENSE",
+	"LICENSE.txt",
+	"MIT-LICENSE.txt",
+	"README.md",
+	"CHANGELOG.md",
+}
 local function build_repo()
 	md("repo")
 
 	rm("repo/soundsphere")
 	md("repo/soundsphere")
 
-	cp(get_repo(), "repo/soundsphere/gamedir.love")
-	for _, dir in ipairs({"bin", "resources", "userdata"}) do
-		mv("repo/soundsphere/gamedir.love/" .. dir, "repo/soundsphere/")
+	local gamedir = "repo/soundsphere/gamedir.love"
+	cp(get_repo(), gamedir)
+	for _, dir in ipairs(extract_list) do
+		mv(gamedir .. "/" .. dir, "repo/soundsphere/")
+	end
+	for _, dir in ipairs(delete_list) do
+		rm(gamedir .. "/" .. dir)
+	end
+	for _, dir in ipairs(delete_recursive_list) do
+		rm_find("repo/soundsphere", dir)
 	end
 
-	write_configs("repo/soundsphere/gamedir.love")
+	write_configs(gamedir)
 
-	os.execute(shell('find repo/soundsphere -name ".git" -exec rm -rf {} +'))
 	os.execute("7z a -tzip repo/soundsphere/game.love ./repo/soundsphere/gamedir.love/*")
 
 	cp("conf.lua", "repo/soundsphere/")
-	cp("repo/soundsphere/gamedir.love/game*", "repo/soundsphere/")
-	rm("repo/soundsphere/gamedir.love")
+	cp(gamedir .. "/game*", "repo/soundsphere/")
+	rm(gamedir)
 
 	local p = io.popen(shell("find repo/soundsphere -not -type d"))
 	local files = {}
