@@ -62,6 +62,10 @@ local function git_log_commit()
 	return popen_read(repo_shell("git log -1 --format=%H")):match("^%s*(.+)%s*\n.*$")
 end
 
+local function git_status()
+	os.execute(repo_shell("git status"))
+end
+
 local function clear()
 	print(("-"):rep(80))
 	-- os.execute(jit.os == "Windows" and "cls" or "clear")
@@ -214,6 +218,7 @@ local function get_menu_items()
 	return {
 		{"download " .. (is_game_downloaded() and "[downloaded]" or "[not downloaded]"), git_clone},
 		{"update", git_pull},
+		{"status", git_status},
 		{"reset", function()
 			print("Are you sure? Type \"yes\"")
 			local answer = io.read()
