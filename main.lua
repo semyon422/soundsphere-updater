@@ -172,6 +172,12 @@ local function write_configs(gamedir)
 	local online = loadfile(online_path)()
 	online.host = config.game.api
 	online.update = config.game.repo .. "/files.json"
+	online.osu = {
+		assets = "https://assets.ppy.sh",
+		static = "https://b.ppy.sh",
+		storage = "https://osu.gatari.pw",
+		web = "https://ripple.moe",
+	}
 	write(online_path, serpent_block(online))
 end
 
