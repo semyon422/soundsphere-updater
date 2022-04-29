@@ -168,17 +168,12 @@ local function write_configs(gamedir)
 		commit = git_log_commit(),
 	}))
 
-	local online_path = gamedir .. "/sphere/models/ConfigModel/online.lua"
-	local online = loadfile(online_path)()
-	online.host = config.game.api
-	online.update = config.game.repo .. "/files.json"
-	online.osu = {
-		assets = "https://assets.ppy.sh",
-		static = "https://b.ppy.sh",
-		storage = "https://osu.gatari.pw",
-		web = "https://ripple.moe",
-	}
-	write(online_path, serpent_block(online))
+	local urls_path = gamedir .. "/sphere/models/ConfigModel/urls.lua"
+	local urls = loadfile(urls_path)()
+	urls.host = config.game.api
+	urls.update = config.game.repo .. "/files.json"
+	urls.osu = config.osu
+	write(urls_path, serpent_block(urls))
 end
 
 local extract_list = {"bin", "resources", "userdata"}

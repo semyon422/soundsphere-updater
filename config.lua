@@ -7,4 +7,10 @@ return {
         repo = "https://dl.soundsphere.xyz",
         api = "https://soundsphere.xyz",
     },
+    osu = {
+		assets = "https://assets.ppy.sh",
+		static = "https://b.ppy.sh",
+		storage = "https://osu.gatari.pw",
+		web = "https://ripple.moe",
+	},
 }
