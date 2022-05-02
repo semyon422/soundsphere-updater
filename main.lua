@@ -250,8 +250,13 @@ local function build_repo()
 end
 
 local build_zip = function()
-	os.execute("rm repo/soundsphere.zip")
-	os.execute("7z a -tzip repo/soundsphere.zip ./repo/soundsphere")
+	os.execute("7z a -tzip repo/soundsphere_temp.zip ./repo/soundsphere")
+	rm("repo/soundsphere.zip")
+	mv("repo/soundsphere_temp.zip", "repo/soundsphere.zip")
+end
+
+local update_zip = function()
+	os.execute("7z u -tzip repo/soundsphere.zip ./repo/soundsphere")
 end
 
 local function get_menu_items()
@@ -268,6 +273,7 @@ local function get_menu_items()
 		end},
 		{"build repo", build_repo},
 		{"build zip", build_zip},
+		{"update zip", update_zip},
 		{"select branch [" .. branch .. "]", select_branch},
 		{"install git " .. (is_git_installed() and "[installed]" or "[not installed]"), install_git},
 		{"exit", os.exit},
