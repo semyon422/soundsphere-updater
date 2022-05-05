@@ -256,7 +256,11 @@ local build_zip = function()
 end
 
 local update_zip = function()
-	os.execute("7z u -tzip repo/soundsphere.zip ./repo/soundsphere/game.love")
+	md("repo/tmp")
+	md("repo/tmp/soundsphere")
+	cp("repo/soundsphere/game.love", "repo/tmp/soundsphere/game.love")
+	os.execute("7z u -tzip repo/soundsphere.zip ./repo/tmp/soundsphere")
+	rm("repo/tmp")
 end
 
 local function get_menu_items()
