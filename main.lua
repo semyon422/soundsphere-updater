@@ -194,16 +194,28 @@ local delete_list = {
 	"tween/rockspecs",
 	"tween/spec",
 	"s3dc/screenshot.png",
+	"lua-MessagePack/src5.3",
+	"lua-MessagePack/test",
+	"lua-MessagePack/docs",
+	"lua-MessagePack/dist.ini",
 }
+
 local delete_recursive_list = {
 	".git",
 	"*.rockspec",
 	"*_spec.lua",
+	"rockspec.*",
+	"rockspec",
+	"Makefile",
+	"CHANGES",
+	"COPYRIGHT",
 	"LICENSE",
 	"LICENSE.txt",
 	"MIT-LICENSE.txt",
 	"README.md",
 	"CHANGELOG.md",
+	"*.md",
+	"*.yml",
 }
 local function build_repo()
 	md("repo")
