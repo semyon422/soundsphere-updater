@@ -173,6 +173,7 @@ local function write_configs(gamedir)
 	urls.host = config.game.api
 	urls.update = config.game.repo .. "/files.json"
 	urls.osu = config.osu
+	urls.multiplayer = config.multiplayer
 	write(urls_path, serpent_block(urls))
 end
 

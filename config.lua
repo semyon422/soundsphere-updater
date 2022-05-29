@@ -4,8 +4,11 @@ return {
         api = "https://api.github.com/repos/semyon422/soundsphere",
     },
     game = {
-        repo = "https://dl.soundsphere.xyz",
+        -- repo = "",
+        repo = "file:///home/semyon422/soundsphere-updater/repo",
+        -- repo = "https://dl.soundsphere.xyz",
         api = "https://soundsphere.xyz",
+        multiplayer = "soundsphere.xyz:9000",
     },
     osu = {
 		assets = "https://assets.ppy.sh",
