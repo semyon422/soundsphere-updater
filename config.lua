@@ -11,7 +11,7 @@ return {
     osu = {
 		assets = "https://assets.ppy.sh",
 		static = "https://b.ppy.sh",
-		storage = "https://osu.gatari.pw",
-		web = "https://osu.akatsuki.pw",
+		storage = "https://catboy.best",
+		web = "https://osu.rina.place",
 	},
 }
