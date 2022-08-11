@@ -8,7 +8,7 @@ local branch_file = io.open("branch", "rb")
 if branch_file then
 	branch = branch_file:read("*all")
 else
-	branch_file = io.open("branch", "wb")
+	branch_file = assert(io.open("branch", "wb"))
 	branch_file:write(branch)
 	branch_file:close()
 end
@@ -21,7 +21,7 @@ end
 
 local function download(url, path)
 	print(("Downloading %s"):format(url))
-	local p = io.popen(("curl --location --silent --create-dirs --output %s %s"):format(path, url))
+	local p = assert(io.popen(("curl --location --silent --create-dirs --output %s %s"):format(path, url)))
 	return p:read("*all")
 end
 
@@ -34,7 +34,7 @@ local function repo_shell(command)
 end
 
 local function popen_read(command)
-	local p = io.popen(command .. " 2> " .. dev_null)
+	local p = assert(io.popen(command .. " 2> " .. dev_null))
 	local content = p:read("*all")
 	p:close()
 	return content
@@ -78,6 +78,7 @@ local function select_branch()
 	if not status then
 		return
 	end
+	assert(type(branches) == "table")
 
 	for i = 1, #branches do
 		print(i .. " - " .. branches[i].name)
@@ -86,7 +87,7 @@ local function select_branch()
 	local branch_index = tonumber(io.read())
 	if branch_index then
 		branch = branches[branch_index].name
-		local file = io.open("branch", "wb")
+		local file = assert(io.open("branch", "wb"))
 		file:write(branch)
 		file:close()
 	end
@@ -99,6 +100,7 @@ local function get_repo_data()
 	if not status then
 		return {}
 	end
+	assert(type(data) == "table")
 
 	return data
 end
@@ -142,14 +144,14 @@ local function cp(src, dst)
 end
 
 local function read(path)
-	local f = io.open(path, "rb")
+	local f = assert(io.open(path, "rb"))
 	local content = f:read("*all")
 	f:close()
 	return content
 end
 
 local function write(path, content)
-	local f = io.open(path, "wb")
+	local f = assert(io.open(path, "wb"))
 	f:write(content)
 	f:close()
 end
@@ -244,7 +246,7 @@ local function build_repo()
 	cp(gamedir .. "/game*", "repo/soundsphere/")
 	rm(gamedir)
 
-	local p = io.popen(shell("find repo/soundsphere -not -type d"))
+	local p = assert(io.popen(shell("find repo/soundsphere -not -type d")))
 	local files = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/"):gsub("^%./", "")
