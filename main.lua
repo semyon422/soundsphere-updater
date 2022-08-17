@@ -204,7 +204,7 @@ local delete_list = {
 }
 
 local delete_recursive_list = {
-	".git",
+	".*",
 	"*.rockspec",
 	"*_spec.lua",
 	"rockspec.*",
@@ -219,6 +219,7 @@ local delete_recursive_list = {
 	"CHANGELOG.md",
 	"*.md",
 	"*.yml",
+	"*.xcf",
 }
 local function build_repo()
 	md("repo")
