@@ -1,30 +1,24 @@
-local mainLoop
+local loop
+love.loop = love.run()
 
 function love.run()
-	if love.load then love.load(love.arg.parseGameArguments(arg), arg) end
-	if love.timer then love.timer.step() end
-
-	return function()
-		return mainLoop()
-	end
-end
-
-function love.load(...)
 	local fileData = assert(love.filesystem.newFileData("game.love"))
 	assert(love.filesystem.mount(fileData, ""))
 
 	package.loaded.main = nil
 	package.loaded.conf = nil
 
-	local love_load = love.load
-
+	love.run = nil
 	love.conf = nil
 	love.handlers = nil
 	love.init()
-	if love.load ~= love_load then
-		love.load(...)
+	if love.load then
+		love.load(love.arg.parseGameArguments(arg), arg)
 	end
-	mainLoop = love.run()
+	assert(love.run, "love.run is not defined")
+	loop = love.run()
+
+	return function() return loop() end
 end
 
 function love.conf(t)
