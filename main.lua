@@ -26,7 +26,7 @@ local function download(url, path)
 end
 
 local function shell(command)
-	return (jit.os == "Windows" and "busybox " or "") .. command
+	return jit.os == "Windows" and ("busybox sh -c %q"):format(command) or command
 end
 
 local function repo_shell(command)
