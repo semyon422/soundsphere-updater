@@ -238,6 +238,7 @@ local function build_repo()
 	for _, dir in ipairs(delete_recursive_list) do
 		rm_find("repo/soundsphere", dir)
 	end
+	mv(gamedir .. "/3rd-deps/lib", "repo/soundsphere/bin/")
 
 	write_configs(gamedir)
 
