@@ -9,6 +9,7 @@ server {
 
     location / {
         root /path/to/repo;
+        autoindex on;
     }
 }
 ```
