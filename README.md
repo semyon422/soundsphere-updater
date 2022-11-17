@@ -1,5 +1,14 @@
 # soundsphere-updater
-soundsphere launcher.
+soundsphere update repository builder.  
 
-* Run `launcher.bat` to download, update, start the game, change branch or reset all code
-* Also you can run game directly by running `soundsphere-*/start.bat`
+`sudo apt install p7zip-full`  
+`sudo gpasswd -a www-data username`  
+```
+server {
+    server_name dl.soundsphere.xyz;
+
+    location / {
+        root /path/to/repo;
+    }
+}
+```
