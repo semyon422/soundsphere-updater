@@ -9,9 +9,9 @@ return {
         multiplayer = "soundsphere.xyz:9000",
     },
     osu = {
-		assets = "https://assets.ppy.sh",
-		static = "https://b.ppy.sh",
-		storage = "https://catboy.best",
-		web = "https://osu.rina.place",
+		background = "https://assets.ppy.sh/beatmaps/%s/covers/cover.jpg",
+		preview = "https://b.ppy.sh/preview/%s.mp3",
+		download = "https://catboy.best/d/%s",
+		search = "https://catboy.best/api/search",
 	},
 }
