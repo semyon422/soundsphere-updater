@@ -11,7 +11,7 @@ return {
     osu = {
 		background = "https://assets.ppy.sh/beatmaps/%s/covers/cover.jpg",
 		preview = "https://b.ppy.sh/preview/%s.mp3",
-		download = "https://catboy.best/d/%s",
+		download = "https://chimu.moe/d/%s",
 		search = "https://catboy.best/api/v2/search",
 	},
 }
