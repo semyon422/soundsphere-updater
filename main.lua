@@ -170,7 +170,7 @@ local function write_configs(gamedir)
 		commit = git_log_commit(),
 	}))
 
-	local urls_path = gamedir .. "/sphere/models/ConfigModel/urls.lua"
+	local urls_path = gamedir .. "/sphere/persistence/ConfigModel/urls.lua"
 	local urls = loadfile(urls_path)()
 	urls.host = config.game.api
 	urls.update = config.game.repo .. "/files.json"
