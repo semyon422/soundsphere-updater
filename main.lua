@@ -171,7 +171,7 @@ local function write_configs(gamedir)
 	}))
 
 	local urls_path = gamedir .. "/sphere/persistence/ConfigModel/urls.lua"
-	local urls = loadfile(urls_path)()
+	local urls = dofile(urls_path)
 	urls.host = config.game.api
 	urls.update = config.game.repo .. "/files.json"
 	urls.osu = config.osu
@@ -242,11 +242,11 @@ local function build_repo()
 
 	write_configs(gamedir)
 
+	mv(gamedir .. "/game*", "repo/soundsphere/")
 	os.execute("7z a -tzip repo/soundsphere/game.love ./repo/soundsphere/gamedir.love/*")
+	rm(gamedir)
 
 	cp("conf.lua", "repo/soundsphere/")
-	cp(gamedir .. "/game*", "repo/soundsphere/")
-	rm(gamedir)
 
 	local p = assert(io.popen(shell("find repo/soundsphere -not -type d")))
 	local files = {}
