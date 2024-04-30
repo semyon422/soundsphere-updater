@@ -4,7 +4,8 @@ return {
         api = "https://api.github.com/repos/semyon422/soundsphere",
     },
     game = {
-        repo = "https://dl.soundsphere.xyz",
+        repo = "",
+        -- repo = "https://dl.soundsphere.xyz",
         api = "https://soundsphere.xyz",
         multiplayer = "soundsphere.xyz:9000",
     },

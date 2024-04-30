@@ -13,8 +13,6 @@ else
 	branch_file:close()
 end
 
-local dev_null = jit.os == "Windows" and "nul" or "/dev/null"
-
 local function get_repo()
 	return ("soundsphere-%s"):format(branch)
 end
@@ -25,16 +23,12 @@ local function download(url, path)
 	return p:read("*all")
 end
 
-local function shell(command)
-	return jit.os == "Windows" and ("busybox sh -c %q"):format(command) or command
-end
-
 local function repo_shell(command)
 	return ("cd %s && %s"):format(get_repo(), command)
 end
 
 local function popen_read(command)
-	local p = assert(io.popen(command .. " 2> " .. dev_null))
+	local p = assert(io.popen(command .. " 2> /dev/null"))
 	local content = p:read("*all")
 	p:close()
 	return content
@@ -68,7 +62,6 @@ end
 
 local function clear()
 	print(("-"):rep(80))
-	-- os.execute(jit.os == "Windows" and "cls" or "clear")
 end
 
 local function select_branch()
@@ -105,42 +98,40 @@ local function get_repo_data()
 	return data
 end
 
-local function install_git()
-	if jit.os ~= "Windows" then
-		return
-	end
-	download("https://github.com/git-for-windows/git/releases/download/v2.30.1.windows.1/Git-2.30.1-64-bit.exe", "gitinstall.exe")
-	print("Installing Git")
-	os.execute("gitinstall.exe /LOADINF=\"gitinstall.inf\" /VERYSILENT")
-	os.execute("del gitinstall.exe")
-end
-
 local function is_git_installed()
 	return popen_read("git version"):find("version")
 end
 
+local function is_7z_installed()
+	return popen_read("7z"):find("p7zip")
+end
+
+local function is_curl_installed()
+	return popen_read("curl --version"):find("curl")
+end
+
 local function is_game_downloaded()
-	return popen_read(shell("ls")):find(get_repo(), 1, true)
+	return popen_read("ls"):find(get_repo(), 1, true)
 end
 
 local function rm(path)
-	os.execute(shell(("rm -rf %s"):format(path)))
+	os.execute(("rm -rf %s"):format(path))
 end
 
 local function rm_find(root, path)
-	os.execute(shell(('find %q -name %q -exec rm -rf {} +'):format(root, path)))
+	os.execute(("find %q -name %q -exec rm -rf {} +"):format(root, path))
 end
 
 local function md(path)
-	os.execute(shell(("mkdir %s"):format(path)))
+	os.execute(("mkdir %s"):format(path))
 end
 
 local function mv(src, dst)
-	os.execute(shell(("mv %s %s"):format(src, dst)))
+	os.execute(("mv %s %s"):format(src, dst))
 end
 
 local function cp(src, dst)
-	os.execute(shell(("cp -r %s %s"):format(src, dst)))
+	os.execute(("cp -r %s %s"):format(src, dst))
 end
 
 local function read(path)
@@ -248,7 +239,7 @@ local function build_repo()
 
 	cp("conf.lua", "repo/soundsphere/")
 
-	local p = assert(io.popen(shell("find repo/soundsphere -not -type d")))
+	local p = assert(io.popen("find repo/soundsphere -not -type d"))
 	local files = {}
 	for line in p:lines() do
 		line = line:gsub("\\", "/"):gsub("^%./", "")
@@ -296,7 +287,6 @@ local function get_menu_items()
 		{"build zip", build_zip},
 		{"update zip (game.love only)", update_zip},
 		{"select branch [" .. branch .. "]", select_branch},
-		{"install git " .. (is_git_installed() and "[installed]" or "[not installed]"), install_git},
 		{"exit", os.exit},
 	}
 end
@@ -318,6 +308,10 @@ while true do
 		print(repo_data.description)
 		print(repo_data.homepage)
 	end
+	print("")
+	print("git: " .. (is_git_installed() and "+" or "-"))
+	print("7z: " .. (is_7z_installed() and "+" or "-"))
+	print("curl: " .. (is_curl_installed() and "+" or "-"))
 	print("")
 
 	local menu_items = get_menu_items()
