@@ -2,6 +2,7 @@ local json = require("json")
 local crc32 = require("crc32")
 local serpent = require("serpent")
 local config = require("config")
+local util = require("util")
 
 local branch = "master"
 local branch_file = io.open("branch", "rb")
@@ -17,21 +18,8 @@ local function get_repo()
 	return ("soundsphere-%s"):format(branch)
 end
 
-local function download(url, path)
-	print(("Downloading %s"):format(url))
-	local p = assert(io.popen(("curl --location --silent --create-dirs --output %s %s"):format(path, url)))
-	return p:read("*all")
-end
-
 local function repo_shell(command)
 	return ("cd %s && %s"):format(get_repo(), command)
-end
-
-local function popen_read(command)
-	local p = assert(io.popen(command .. " 2> /dev/null"))
-	local content = p:read("*all")
-	p:close()
-	return content
 end
 
 local function git_clone()
@@ -49,11 +37,11 @@ local function git_reset()
 end
 
 local function git_log_date()
-	return popen_read(repo_shell("git log -1 --format=%cd")):match("^%s*(.+)%s*\n.*$")
+	return util.popen_read(repo_shell("git log -1 --format=%cd")):match("^%s*(.+)%s*\n.*$")
 end
 
 local function git_log_commit()
-	return popen_read(repo_shell("git log -1 --format=%H")):match("^%s*(.+)%s*\n.*$")
+	return util.popen_read(repo_shell("git log -1 --format=%H")):match("^%s*(.+)%s*\n.*$")
 end
 
 local function git_status()
@@ -65,7 +53,7 @@ local function clear()
 end
 
 local function select_branch()
-	local response = download(config.github.repo .. "/branches", "-")
+	local response = util.download(config.github.repo .. "/branches", "-")
 	local status, branches = pcall(json.decode, response)
 
 	if not status then
@@ -87,7 +75,7 @@ local function select_branch()
 end
 
 local function get_repo_data()
-	local response = download(config.github.repo, "-")
+	local response = util.download(config.github.repo, "-")
 	local status, data = pcall(json.decode, response)
 
 	if not status then
@@ -99,52 +87,19 @@ local function get_repo_data()
 end
 
 local function is_git_installed()
-	return popen_read("git version"):find("version")
+	return util.popen_read("git version"):find("version")
 end
 
 local function is_7z_installed()
-	return popen_read("7z"):find("p7zip")
+	return util.popen_read("7z"):find("p7zip")
 end
 
 local function is_curl_installed()
-	return popen_read("curl --version"):find("curl")
+	return util.popen_read("curl --version"):find("curl")
 end
 
 local function is_game_downloaded()
-	return popen_read("ls"):find(get_repo(), 1, true)
-end
-
-local function rm(path)
-	os.execute(("rm -rf %s"):format(path))
-end
-
-local function rm_find(root, path)
-	os.execute(("find %q -name %q -exec rm -rf {} +"):format(root, path))
-end
-
-local function md(path)
-	os.execute(("mkdir %s"):format(path))
-end
-
-local function mv(src, dst)
-	os.execute(("mv %s %s"):format(src, dst))
-end
-
-local function cp(src, dst)
-	os.execute(("cp -r %s %s"):format(src, dst))
-end
-
-local function read(path)
-	local f = assert(io.open(path, "rb"))
-	local content = f:read("*all")
-	f:close()
-	return content
-end
-
-local function write(path, content)
-	local f = assert(io.open(path, "wb"))
-	f:write(content)
-	f:close()
+	return util.popen_read("ls"):find(get_repo(), 1, true)
 end
 
 local function serpent_block(t)
@@ -156,7 +111,7 @@ local function serpent_block(t)
 end
 
 local function write_configs(gamedir)
-	write(gamedir .. "/version.lua", serpent_block({
+	util.write(gamedir .. "/version.lua", serpent_block({
 		date = git_log_date(),
 		commit = git_log_commit(),
 	}))
@@ -167,7 +122,7 @@ local function write_configs(gamedir)
 	urls.update = config.game.repo .. "/files.json"
 	urls.osu = config.osu
 	urls.multiplayer = config.game.multiplayer
-	write(urls_path, serpent_block(urls))
+	util.write(urls_path, serpent_block(urls))
 end
 
 local extract_list = {"bin", "resources", "userdata"}
@@ -213,31 +168,31 @@ local delete_recursive_list = {
 	"*.xcf",
 }
 local function build_repo()
-	md("repo")
+	util.md("repo")
 
-	rm("repo/soundsphere")
-	md("repo/soundsphere")
+	util.rm("repo/soundsphere")
+	util.md("repo/soundsphere")
 
 	local gamedir = "repo/soundsphere/gamedir.love"
-	cp(get_repo(), gamedir)
+	util.cp(get_repo(), gamedir)
 	for _, dir in ipairs(extract_list) do
-		mv(gamedir .. "/" .. dir, "repo/soundsphere/")
+		util.mv(gamedir .. "/" .. dir, "repo/soundsphere/")
 	end
 	for _, dir in ipairs(delete_list) do
-		rm(gamedir .. "/" .. dir)
+		util.rm(gamedir .. "/" .. dir)
 	end
 	for _, dir in ipairs(delete_recursive_list) do
-		rm_find("repo/soundsphere", dir)
+		util.rm_find("repo/soundsphere", dir)
 	end
-	mv(gamedir .. "/3rd-deps/lib", "repo/soundsphere/bin/")
+	util.mv(gamedir .. "/3rd-deps/lib", "repo/soundsphere/bin/")
 
 	write_configs(gamedir)
 
-	mv(gamedir .. "/game*", "repo/soundsphere/")
+	util.mv(gamedir .. "/game*", "repo/soundsphere/")
 	os.execute("7z a -tzip repo/soundsphere/game.love ./repo/soundsphere/gamedir.love/*")
-	rm(gamedir)
+	util.rm(gamedir)
 
-	cp("conf.lua", "repo/soundsphere/")
+	util.cp("conf.lua", "repo/soundsphere/")
 
 	local p = assert(io.popen("find repo/soundsphere -not -type d"))
 	local files = {}
@@ -247,28 +202,28 @@ local function build_repo()
 			files[#files + 1] = {
 				path = line:gsub("^repo/soundsphere/", ""),
 				url = config.game.repo .. line:gsub("^repo", ""),
-				hash = crc32.hash(read(line)),
+				hash = crc32.hash(util.read(line)),
 			}
 		end
 	end
 	p:close()
 
-	write("repo/soundsphere/userdata/files.lua", serpent_block(files))
-	write("repo/files.json", json.encode(files))
+	util.write("repo/soundsphere/userdata/files.lua", serpent_block(files))
+	util.write("repo/files.json", json.encode(files))
 end
 
-local build_zip = function()
+local function build_zip()
 	os.execute("7z a -tzip repo/soundsphere_temp.zip ./repo/soundsphere")
-	rm("repo/soundsphere.zip")
-	mv("repo/soundsphere_temp.zip", "repo/soundsphere.zip")
+	util.rm("repo/soundsphere.zip")
+	util.mv("repo/soundsphere_temp.zip", "repo/soundsphere.zip")
 end
 
-local update_zip = function()
-	md("repo/tmp")
-	md("repo/tmp/soundsphere")
-	cp("repo/soundsphere/game.love", "repo/tmp/soundsphere/game.love")
+local function update_zip()
+	util.md("repo/tmp")
+	util.md("repo/tmp/soundsphere")
+	util.cp("repo/soundsphere/game.love", "repo/tmp/soundsphere/game.love")
 	os.execute("7z u -tzip repo/soundsphere.zip ./repo/tmp/soundsphere")
-	rm("repo/tmp")
+	util.rm("repo/tmp")
 end
 
 local function get_menu_items()
