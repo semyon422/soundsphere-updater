@@ -1,89 +1,21 @@
+local pkg = require("aqua.package")
+pkg.add("aqua")
+
 local json = require("json")
 local crc32 = require("crc32")
-local serpent = require("serpent")
+local stbl = require("stbl")
 local config = require("config")
 local util = require("util")
+local Repo = require("Repo")
 
-local branch = "master"
-local branch_file = io.open("branch", "rb")
-if branch_file then
-	branch = branch_file:read("*all")
-else
-	branch_file = assert(io.open("branch", "wb"))
-	branch_file:write(branch)
-	branch_file:close()
-end
+local branch_file = assert(io.open("branch", "rb"))
+local branch = branch_file:read("*a"):match("^%s*(.-)%s*$")
 
-local function get_repo()
-	return ("soundsphere-%s"):format(branch)
-end
-
-local function repo_shell(command)
-	return ("cd %s && %s"):format(get_repo(), command)
-end
-
-local function git_clone()
-	os.execute(("git clone --depth 1 --recurse-submodules --shallow-submodules --single-branch --branch %s %s %s"):format(
-		branch, config.github.repo, get_repo()
-	))
-end
-
-local function git_pull()
-	os.execute(repo_shell("git pull --recurse-submodules"))
-end
-
-local function git_reset()
-	os.execute(repo_shell("git reset --hard --recurse-submodules"))
-end
-
-local function git_log_date()
-	return util.popen_read(repo_shell("git log -1 --format=%cd")):match("^%s*(.+)%s*\n.*$")
-end
-
-local function git_log_commit()
-	return util.popen_read(repo_shell("git log -1 --format=%H")):match("^%s*(.+)%s*\n.*$")
-end
-
-local function git_status()
-	os.execute(repo_shell("git status"))
-end
+local repo = Repo(config.github.repo, "soundsphere")
+repo:setBranch(branch)
 
 local function clear()
 	print(("-"):rep(80))
-end
-
-local function select_branch()
-	local response = util.download(config.github.repo .. "/branches", "-")
-	local status, branches = pcall(json.decode, response)
-
-	if not status then
-		return
-	end
-	assert(type(branches) == "table")
-
-	for i = 1, #branches do
-		print(i .. " - " .. branches[i].name)
-	end
-
-	local branch_index = tonumber(io.read())
-	if branch_index then
-		branch = branches[branch_index].name
-		local file = assert(io.open("branch", "wb"))
-		file:write(branch)
-		file:close()
-	end
-end
-
-local function get_repo_data()
-	local response = util.download(config.github.repo, "-")
-	local status, data = pcall(json.decode, response)
-
-	if not status then
-		return {}
-	end
-	assert(type(data) == "table")
-
-	return data
 end
 
 local function is_git_installed()
@@ -99,21 +31,17 @@ local function is_curl_installed()
 end
 
 local function is_game_downloaded()
-	return util.popen_read("ls"):find(get_repo(), 1, true)
+	return util.popen_read("ls"):find(repo:getDirName(), 1, true)
 end
 
-local function serpent_block(t)
-	return ("return %s\n"):format(serpent.block(t, {
-		indent = "\t",
-		comment = false,
-		sortkeys = true,
-	}))
+local function serialize(t)
+	return ("return %s\n"):format(stbl.encode(t))
 end
 
 local function write_configs(gamedir)
-	util.write(gamedir .. "/version.lua", serpent_block({
-		date = git_log_date(),
-		commit = git_log_commit(),
+	util.write(gamedir .. "/version.lua", serialize({
+		date = repo:log_date(),
+		commit = repo:log_commit(),
 	}))
 
 	local urls_path = gamedir .. "/sphere/persistence/ConfigModel/urls.lua"
@@ -122,7 +50,7 @@ local function write_configs(gamedir)
 	urls.update = config.game.repo .. "/files.json"
 	urls.osu = config.osu
 	urls.multiplayer = config.game.multiplayer
-	util.write(urls_path, serpent_block(urls))
+	util.write(urls_path, serialize(urls))
 end
 
 local extract_list = {"bin", "resources", "userdata"}
@@ -174,7 +102,7 @@ local function build_repo()
 	util.md("repo/soundsphere")
 
 	local gamedir = "repo/soundsphere/gamedir.love"
-	util.cp(get_repo(), gamedir)
+	util.cp(repo:getDirName(), gamedir)
 	for _, dir in ipairs(extract_list) do
 		util.mv(gamedir .. "/" .. dir, "repo/soundsphere/")
 	end
@@ -208,7 +136,7 @@ local function build_repo()
 	end
 	p:close()
 
-	util.write("repo/soundsphere/userdata/files.lua", serpent_block(files))
+	util.write("repo/soundsphere/userdata/files.lua", serialize(files))
 	util.write("repo/files.json", json.encode(files))
 end
 
@@ -228,20 +156,25 @@ end
 
 local function get_menu_items()
 	return {
-		{"download " .. (is_game_downloaded() and "[downloaded]" or "[not downloaded]"), git_clone},
-		{"update", git_pull},
-		{"status", git_status},
+		{"download " .. (is_game_downloaded() and "[downloaded]" or "[not downloaded]"), function()
+			repo:clone()
+		end},
+		{"update", function()
+			repo:pull()
+		end},
+		{"status", function()
+			repo:status()
+		end},
 		{"reset", function()
 			print("Are you sure? Type \"yes\"")
 			local answer = io.read()
 			if answer == "yes" then
-				git_reset()
+				repo:reset()
 			end
 		end},
 		{"build repo", build_repo},
 		{"build zip", build_zip},
 		{"update zip (game.love only)", update_zip},
-		{"select branch [" .. branch .. "]", select_branch},
 		{"exit", os.exit},
 	}
 end
@@ -250,24 +183,18 @@ if arg[1] == "build_repo" then
 	return build_repo()
 end
 
-local repo_data = get_repo_data()
-
 while true do
 	clear()
 
 	print("soundsphere launcher")
 	print("")
 
-	if repo_data.name == "soundsphere" then
-		print(repo_data.name)
-		print(repo_data.description)
-		print(repo_data.homepage)
-	end
 	print("")
 	print("git: " .. (is_git_installed() and "+" or "-"))
 	print("7z: " .. (is_7z_installed() and "+" or "-"))
 	print("curl: " .. (is_curl_installed() and "+" or "-"))
 	print("")
+	print("branch: " .. branch)
 
 	local menu_items = get_menu_items()
 	for i, item in ipairs(menu_items) do

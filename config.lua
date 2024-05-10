@@ -1,11 +1,10 @@
 return {
     github = {
         repo = "https://github.com/semyon422/soundsphere",
-        api = "https://api.github.com/repos/semyon422/soundsphere",
     },
     game = {
-        repo = "",
-        -- repo = "https://dl.soundsphere.xyz",
+        -- repo = "",
+        repo = "https://dl.soundsphere.xyz",
         api = "https://soundsphere.xyz",
         multiplayer = "soundsphere.xyz:9000",
     },
