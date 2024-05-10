@@ -1,62 +1,62 @@
 local class = require("class")
 local util = require("util")
 
----@class repo.Repo
----@operator call: repo.Repo
-local Repo = class()
+---@class repo.GitRepo
+---@operator call: repo.GitRepo
+local GitRepo = class()
 
 ---@param url string
 ---@param name string
-function Repo:new(url, name)
+function GitRepo:new(url, name)
 	self.url = url
 	self.name = name
 end
 
 ---@param branch string
-function Repo:setBranch(branch)
+function GitRepo:setBranch(branch)
 	self.branch = branch
 end
 
-function Repo:getDirName()
+function GitRepo:getDirName()
 	return ("%s-%s"):format(self.name, self.branch)
 end
 
-function Repo:formatCommand(command)
+function GitRepo:formatCommand(command)
 	return("git -C %s %s"):format(self:getDirName(), command)
 end
 
-function Repo:execute(command)
+function GitRepo:execute(command)
 	os.execute(self:formatCommand(command))
 end
 
-function Repo:pread(command)
+function GitRepo:pread(command)
 	return util.popen_read(self:formatCommand(command))
 end
 
-function Repo:clone()
+function GitRepo:clone()
 	os.execute(("git clone --depth 1 --recurse-submodules --shallow-submodules --single-branch --branch %s %s %s"):format(
 		self.branch, self.url, self:getDirName()
 	))
 end
 
-function Repo:status()
+function GitRepo:status()
 	self:execute("status")
 end
 
-function Repo:pull()
+function GitRepo:pull()
 	self:execute("pull --recurse-submodules")
 end
 
-function Repo:reset()
+function GitRepo:reset()
 	self:execute("reset --hard --recurse-submodules")
 end
 
-function Repo:log_date()
+function GitRepo:log_date()
 	return self:pread("log -1 --format=%cd"):match("^%s*(.+)%s*\n.*$")
 end
 
-function Repo:log_commit()
+function GitRepo:log_commit()
 	return self:pread("log -1 --format=%H"):match("^%s*(.+)%s*\n.*$")
 end
 
-return Repo
+return GitRepo

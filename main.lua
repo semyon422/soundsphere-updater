@@ -6,13 +6,16 @@ local crc32 = require("crc32")
 local stbl = require("stbl")
 local config = require("config")
 local util = require("util")
-local Repo = require("Repo")
+local GitRepo = require("GitRepo")
+local RepoBuilder = require("RepoBuilder")
 
 local branch_file = assert(io.open("branch", "rb"))
 local branch = branch_file:read("*a"):match("^%s*(.-)%s*$")
 
-local repo = Repo(config.github.repo, "soundsphere")
-repo:setBranch(branch)
+local git_repo = GitRepo(config.github.repo, "soundsphere")
+git_repo:setBranch(branch)
+
+local repoBuilder = RepoBuilder(git_repo)
 
 local function clear()
 	print(("-"):rep(80))
@@ -31,113 +34,7 @@ local function is_curl_installed()
 end
 
 local function is_game_downloaded()
-	return util.popen_read("ls"):find(repo:getDirName(), 1, true)
-end
-
-local function serialize(t)
-	return ("return %s\n"):format(stbl.encode(t))
-end
-
-local function write_configs(gamedir)
-	util.write(gamedir .. "/version.lua", serialize({
-		date = repo:log_date(),
-		commit = repo:log_commit(),
-	}))
-
-	local urls_path = gamedir .. "/sphere/persistence/ConfigModel/urls.lua"
-	local urls = dofile(urls_path)
-	urls.host = config.game.api
-	urls.update = config.game.repo .. "/files.json"
-	urls.osu = config.osu
-	urls.multiplayer = config.game.multiplayer
-	util.write(urls_path, serialize(urls))
-end
-
-local extract_list = {"bin", "resources", "userdata"}
-local delete_list = {
-	"cimgui-love/cimgui",
-	"cimgui-love/cparser",
-	"inspect/rockspecs",
-	"inspect/spec",
-	"json/bench",
-	"json/test",
-	"lua-toml/rockspecs",
-	"lua-toml/spec",
-	"md5/rockspecs",
-	"md5/spec",
-	"serpent/t",
-	"tinyyaml/rockspec",
-	"tinyyaml/spec",
-	"tween/rockspecs",
-	"tween/spec",
-	"s3dc/screenshot.png",
-	"lua-MessagePack/src5.3",
-	"lua-MessagePack/test",
-	"lua-MessagePack/docs",
-	"lua-MessagePack/dist.ini",
-}
-
-local delete_recursive_list = {
-	".*",
-	"*.rockspec",
-	"*_spec.lua",
-	"rockspec.*",
-	"rockspec",
-	"Makefile",
-	"CHANGES",
-	"COPYRIGHT",
-	"LICENSE",
-	"LICENSE.txt",
-	"MIT-LICENSE.txt",
-	"README.md",
-	"CHANGELOG.md",
-	"*.md",
-	"*.yml",
-	"*.xcf",
-}
-local function build_repo()
-	util.md("repo")
-
-	util.rm("repo/soundsphere")
-	util.md("repo/soundsphere")
-
-	local gamedir = "repo/soundsphere/gamedir.love"
-	util.cp(repo:getDirName(), gamedir)
-	for _, dir in ipairs(extract_list) do
-		util.mv(gamedir .. "/" .. dir, "repo/soundsphere/")
-	end
-	for _, dir in ipairs(delete_list) do
-		util.rm(gamedir .. "/" .. dir)
-	end
-	for _, dir in ipairs(delete_recursive_list) do
-		util.rm_find("repo/soundsphere", dir)
-	end
-	util.mv(gamedir .. "/3rd-deps/lib", "repo/soundsphere/bin/")
-
-	write_configs(gamedir)
-
-	util.mv(gamedir .. "/game*", "repo/soundsphere/")
-	os.execute("7z a -tzip repo/soundsphere/game.love ./repo/soundsphere/gamedir.love/*")
-	util.rm(gamedir)
-
-	util.cp("conf.lua", "repo/soundsphere/")
-
-	local p = assert(io.popen("find repo/soundsphere -not -type d"))
-	local files = {}
-	for line in p:lines() do
-		line = line:gsub("\\", "/"):gsub("^%./", "")
-		if not line:find("^%..*") then
-			files[#files + 1] = {
-				path = line:gsub("^repo/soundsphere/", ""),
-				url = config.game.repo .. line:gsub("^repo", ""),
-				hash = crc32.hash(util.read(line)),
-			}
-		end
-	end
-	p:close()
-
-	util.write("repo/soundsphere/userdata/files.lua", serialize(files))
-	util.write("repo/files.json", json.encode(files))
+	return util.popen_read("ls"):find(git_repo:getDirName(), 1, true)
 end
 
 local function build_zip()
@@ -157,22 +54,24 @@ end
 local function get_menu_items()
 	return {
 		{"download " .. (is_game_downloaded() and "[downloaded]" or "[not downloaded]"), function()
-			repo:clone()
+			git_repo:clone()
 		end},
 		{"update", function()
-			repo:pull()
+			git_repo:pull()
 		end},
 		{"status", function()
-			repo:status()
+			git_repo:status()
 		end},
 		{"reset", function()
 			print("Are you sure? Type \"yes\"")
 			local answer = io.read()
 			if answer == "yes" then
-				repo:reset()
+				git_repo:reset()
 			end
 		end},
-		{"build repo", build_repo},
+		{"build repo", function()
+			repoBuilder:build()
+		end},
 		{"build zip", build_zip},
 		{"update zip (game.love only)", update_zip},
 		{"exit", os.exit},
@@ -180,7 +79,7 @@ local function get_menu_items()
 end
 
 if arg[1] == "build_repo" then
-	return build_repo()
+	repoBuilder:build()
 end
 
 while true do
