@@ -14,6 +14,8 @@ git_repo:setBranch(branch)
 
 local repoBuilder = RepoBuilder(git_repo)
 
+local love_macos = "https://github.com/love2d/love/releases/download/11.5/love-11.5-macos.zip"
+
 local function clear()
 	print(("-"):rep(80))
 end
@@ -30,26 +32,25 @@ local function is_curl_installed()
 	return util.popen_read("curl --version"):find("curl")
 end
 
+local function is_love_macos_downloaded()
+	return util.popen_read("ls"):find("love-macos.zip", 1, true)
+end
+
 local function is_game_downloaded()
 	return util.popen_read("ls"):find(git_repo:getDirName(), 1, true)
 end
 
-local function build_zip()
-	os.execute("7z a -tzip repo/soundsphere_temp.zip ./repo/soundsphere")
-	util.rm("repo/soundsphere.zip")
-	util.mv("repo/soundsphere_temp.zip", "repo/soundsphere.zip")
-end
-
-local function update_zip()
-	util.md("repo/tmp")
-	util.md("repo/tmp/soundsphere")
-	util.cp("repo/soundsphere/game.love", "repo/tmp/soundsphere/game.love")
-	os.execute("7z u -tzip repo/soundsphere.zip ./repo/tmp/soundsphere")
-	util.rm("repo/tmp")
-end
-
 local function get_menu_items()
 	return {
+		{"build repo", function()
+			repoBuilder:build()
+		end},
+		{"update zip (game.love only)", function()
+			repoBuilder:update_zip()
+		end},
+		{"build zip", function()
+			repoBuilder:build_zip()
+		end},
 		{"download " .. (is_game_downloaded() and "[downloaded]" or "[not downloaded]"), function()
 			git_repo:clone()
 		end},
@@ -66,11 +67,12 @@ local function get_menu_items()
 				git_repo:reset()
 			end
 		end},
-		{"build repo", function()
-			repoBuilder:build()
+		{"download love-macos", function()
+			util.download(love_macos, "love-macos.zip")
 		end},
-		{"build zip", build_zip},
-		{"update zip (game.love only)", update_zip},
+		{"build macos", function()
+			repoBuilder:buildMacos()
+		end},
 		{"exit", os.exit},
 	}
 end
@@ -89,6 +91,7 @@ while true do
 	print("git: " .. (is_git_installed() and "+" or "-"))
 	print("7z: " .. (is_7z_installed() and "+" or "-"))
 	print("curl: " .. (is_curl_installed() and "+" or "-"))
+	print("love-macos: " .. (is_love_macos_downloaded() and "+" or "-"))
 	print("")
 	print("branch: " .. branch)
 

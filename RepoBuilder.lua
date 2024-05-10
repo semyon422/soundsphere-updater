@@ -44,7 +44,7 @@ local extract_list = {
 	"game-win64.bat",
 }
 
-function RepoBuilder:build()
+function RepoBuilder:buildGenericRepo()
 	util.md("repo")
 
 	local gamerepo = "repo/soundsphere"
@@ -70,7 +70,12 @@ function RepoBuilder:build()
 	util.rm(gamedir)
 
 	util.cp("conf.lua", gamerepo)
+end
 
+function RepoBuilder:build()
+	self:buildGenericRepo()
+
+	local gamerepo = "repo/soundsphere"
 	local files = {}
 	for line in util.find(gamerepo, "-not -type d") do
 		table.insert(files, {
@@ -82,6 +87,48 @@ function RepoBuilder:build()
 
 	util.write(gamerepo .. "/userdata/files.lua", serialize(files))
 	util.write("repo/files.json", json.encode(files))
+end
+
+function RepoBuilder:build_zip()
+	os.execute("7z a -tzip repo/soundsphere_temp.zip ./repo/soundsphere")
+	util.rm("repo/soundsphere.zip")
+	util.mv("repo/soundsphere_temp.zip", "repo/soundsphere.zip")
+end
+
+function RepoBuilder:update_zip()
+	util.md("repo/tmp")
+	util.md("repo/tmp/soundsphere")
+	util.cp("repo/soundsphere/game.love", "repo/tmp/soundsphere/game.love")
+	os.execute("7z u -tzip repo/soundsphere.zip ./repo/tmp/soundsphere")
+	util.rm("repo/tmp")
+end
+
+function RepoBuilder:buildMacos()
+	local game_app = "repo/macos/soundsphere.app"
+	local Contents = game_app .. "/Contents"
+	local Frameworks = Contents .. "/Frameworks"
+	local Resources = Contents .. "/Resources"
+
+	util.rm("repo/macos")
+	util.md("repo/macos")
+	os.execute("7z x -tzip love-macos.zip -orepo/macos")
+	util.mv("repo/macos/love.app", game_app)
+	util.findall(game_app, "-type l -delete")
+	util.findall(Frameworks, '-type f -not -regex "^.*/A/[^/]*$" -delete')
+	util.cp("Info.plist", game_app .. "/Contents")
+	util.rm(Resources)
+	util.cp("repo/soundsphere", Resources)
+	for path in util.find(Resources .. "/bin/mac64", "-type f") do
+		util.mv(path, Frameworks)
+	end
+	util.rm(Resources .. "/bin/win64")
+	util.rm(Resources .. "/bin/linux64")
+
+	util.findall(game_app, "-empty -type d -delete")
+
+	os.execute("7z a -tzip repo/soundsphere_macos_temp.zip ./" .. game_app)
+	util.rm("repo/soundsphere_macos.zip")
+	util.mv("repo/soundsphere_macos_temp.zip", "repo/soundsphere_macos.zip")
 end
 
 return RepoBuilder
