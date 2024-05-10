@@ -1,9 +1,6 @@
 local pkg = require("aqua.package")
 pkg.add("aqua")
 
-local json = require("json")
-local crc32 = require("crc32")
-local stbl = require("stbl")
 local config = require("config")
 local util = require("util")
 local GitRepo = require("GitRepo")
