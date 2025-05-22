@@ -1,5 +1,7 @@
-local pkg = require("aqua.package")
+local pkg = require("aqua.pkg")
+pkg.import_lua()
 pkg.add("aqua")
+pkg.export_lua()
 
 local config = require("config")
 local util = require("util")
