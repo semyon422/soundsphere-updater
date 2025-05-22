@@ -27,6 +27,7 @@ function RepoBuilder:writeConfigs(gamedir)
 	local urls_path = gamedir .. "/sphere/persistence/ConfigModel/urls.lua"
 	local urls = dofile(urls_path)
 	urls.host = config.game.api
+	urls.websocket = config.game.websocket
 	urls.update = config.game.repo .. "/files.json"
 	urls.osu = config.osu
 	urls.multiplayer = config.game.multiplayer
