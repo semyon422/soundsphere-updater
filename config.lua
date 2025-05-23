@@ -1,6 +1,8 @@
 return {
 	github = {
 		repo = "https://github.com/semyon422/soundsphere",
+		client_branch = "master",
+		server_branch = "master",
 	},
 	game = {
 		repo = "https://dl.soundsphere.xyz",

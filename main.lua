@@ -8,13 +8,13 @@ local util = require("util")
 local GitRepo = require("GitRepo")
 local RepoBuilder = require("RepoBuilder")
 
-local branch_file = assert(io.open("branch", "rb"))
-local branch = branch_file:read("*a"):match("^%s*(.-)%s*$")
+local repo_client = GitRepo(config.github.repo, "client")
+repo_client:setBranch(config.github.client_branch)
 
-local git_repo = GitRepo(config.github.repo, "soundsphere")
-git_repo:setBranch(branch)
+local repo_server = GitRepo(config.github.repo, "server")
+repo_server:setBranch(config.github.server_branch)
 
-local repoBuilder = RepoBuilder(git_repo)
+local repoBuilder = RepoBuilder(repo_client)
 
 local love_macos = "https://github.com/love2d/love/releases/download/11.5/love-11.5-macos.zip"
 
@@ -38,8 +38,8 @@ local function is_love_macos_downloaded()
 	return util.popen_read("ls"):find("love-macos.zip", 1, true)
 end
 
-local function is_game_downloaded()
-	return util.popen_read("ls"):find(git_repo:getDirName(), 1, true)
+local function is_client_downloaded()
+	return util.popen_read("ls"):find(repo_client:getDirName(), 1, true)
 end
 
 local function get_menu_items()
@@ -47,33 +47,34 @@ local function get_menu_items()
 		{"build repo", function()
 			repoBuilder:build()
 		end},
-		{"update zip (game.love only)", function()
-			repoBuilder:update_zip()
-		end},
 		{"build zip", function()
 			repoBuilder:build_zip()
+			repoBuilder:buildMacos()
 		end},
-		{"download " .. (is_game_downloaded() and "[downloaded]" or "[not downloaded]"), function()
-			git_repo:clone()
+		-- {"update zip (game.love only)", function()
+		-- 	repoBuilder:update_zip()
+		-- end},
+		{"git pull", function()
+			repo_client:pull()
+			repo_server:pull()
 		end},
-		{"update", function()
-			git_repo:pull()
+		-- {"status", function()
+		-- 	repo_client:status()
+		-- 	repo_server:status()
+		-- end},
+		{"git clone", function()
+			repo_client:clone()
+			repo_server:clone()
 		end},
-		{"status", function()
-			git_repo:status()
-		end},
-		{"reset", function()
-			print("Are you sure? Type \"yes\"")
-			local answer = io.read()
-			if answer == "yes" then
-				git_repo:reset()
-			end
-		end},
+		-- {"reset", function()
+		-- 	print("Are you sure? Type \"yes\"")
+		-- 	local answer = io.read()
+		-- 	if answer == "yes" then
+		-- 		repo_client:reset()
+		-- 	end
+		-- end},
 		{"download love-macos", function()
 			util.download(love_macos, "love-macos.zip")
-		end},
-		{"build macos", function()
-			repoBuilder:buildMacos()
 		end},
 		{"exit", os.exit},
 	}
@@ -86,8 +87,7 @@ end
 while true do
 	clear()
 
-	print("soundsphere launcher")
-	print("")
+	print("soundsphere updater")
 
 	print("")
 	print("git: " .. (is_git_installed() and "+" or "-"))
@@ -95,7 +95,8 @@ while true do
 	print("curl: " .. (is_curl_installed() and "+" or "-"))
 	print("love-macos: " .. (is_love_macos_downloaded() and "+" or "-"))
 	print("")
-	print("branch: " .. branch)
+	print("client branch: " .. config.github.client_branch)
+	print("server branch: " .. config.github.server_branch)
 
 	local menu_items = get_menu_items()
 	for i, item in ipairs(menu_items) do

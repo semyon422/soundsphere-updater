@@ -1,3 +1,4 @@
-soundsphere-*
+client-*
+server-*
 repo/*
 love-macos.zip
