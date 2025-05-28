@@ -51,6 +51,9 @@ local function get_menu_items()
 			repoBuilder:build_zip()
 			repoBuilder:buildMacos()
 		end},
+		{"openresty reload", function()
+			os.execute(("./%s/openresty reload"):format(repo_server:getDirName()))
+		end},
 		-- {"update zip (game.love only)", function()
 		-- 	repoBuilder:update_zip()
 		-- end},
