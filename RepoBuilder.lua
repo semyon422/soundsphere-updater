@@ -5,6 +5,8 @@ local json = require("json")
 local util = require("util")
 local config = require("config")
 
+local _name = config.repo.name
+
 ---@class repo.RepoBuilder
 ---@operator call: repo.RepoBuilder
 local RepoBuilder = class()
@@ -48,7 +50,7 @@ local extract_list = {
 function RepoBuilder:buildGenericRepo()
 	util.md("repo")
 
-	local gamerepo = "repo/soundsphere"
+	local gamerepo = "repo/" .. _name
 	local gamedir = gamerepo .. "/gamedir.love"
 
 	util.rm(gamerepo)
@@ -76,7 +78,7 @@ end
 function RepoBuilder:build()
 	self:buildGenericRepo()
 
-	local gamerepo = "repo/soundsphere"
+	local gamerepo = "repo/" .. _name
 	local files = {}
 	for line in util.find(gamerepo, "-not -type d") do
 		table.insert(files, {
@@ -91,21 +93,21 @@ function RepoBuilder:build()
 end
 
 function RepoBuilder:build_zip()
-	os.execute("7z a -tzip repo/soundsphere_temp.zip ./repo/soundsphere")
-	util.rm("repo/soundsphere.zip")
-	util.mv("repo/soundsphere_temp.zip", "repo/soundsphere.zip")
+	os.execute(("7z a -tzip repo/%s_temp.zip ./repo/%s"):format(_name, _name))
+	util.rm(("repo/%s.zip"):format(_name))
+	util.mv(("repo/%s_temp.zip"):format(_name), ("repo/%s.zip"):format(_name))
 end
 
 function RepoBuilder:update_zip()
 	util.md("repo/tmp")
-	util.md("repo/tmp/soundsphere")
-	util.cp("repo/soundsphere/game.love", "repo/tmp/soundsphere/game.love")
-	os.execute("7z u -tzip repo/soundsphere.zip ./repo/tmp/soundsphere")
+	util.md(("repo/tmp/%s"):format(_name))
+	util.cp(("repo/%s/game.love"):format(_name), ("repo/tmp/%s/game.love"):format(_name))
+	os.execute(("7z u -tzip repo/%s.zip ./repo/tmp/%s"):format(_name, _name))
 	util.rm("repo/tmp")
 end
 
 function RepoBuilder:buildMacos()
-	local game_app = "repo/macos/soundsphere.app"
+	local game_app = ("repo/macos/%s.app"):format(_name)
 	local Contents = game_app .. "/Contents"
 	local Frameworks = Contents .. "/Frameworks"
 	local Resources = Contents .. "/Resources"
@@ -118,7 +120,7 @@ function RepoBuilder:buildMacos()
 	util.findall(Frameworks, '-type f -not -regex "^.*/A/[^/]*$" -delete')
 	util.cp("Info.plist", game_app .. "/Contents")
 	util.rm(Resources)
-	util.cp("repo/soundsphere", Resources)
+	util.cp(("repo/%s"):format(_name), Resources)
 	for path in util.find(Resources .. "/bin/mac64", "-type f") do
 		util.mv(path, Frameworks)
 	end
@@ -127,9 +129,9 @@ function RepoBuilder:buildMacos()
 
 	util.findall(game_app, "-empty -type d -delete")
 
-	os.execute("7z a -tzip repo/soundsphere_macos_temp.zip ./" .. game_app)
-	util.rm("repo/soundsphere_macos.zip")
-	util.mv("repo/soundsphere_macos_temp.zip", "repo/soundsphere_macos.zip")
+	os.execute(("7z a -tzip repo/%s_macos_temp.zip ./"):format(_name) .. game_app)
+	util.rm(("repo/%s_macos.zip"):format(_name))
+	util.mv(("repo/%s_macos_temp.zip"):format(_name), ("repo/%s_macos.zip"):format(_name))
 end
 
 return RepoBuilder

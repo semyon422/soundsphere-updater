@@ -13,11 +13,11 @@
 	<key>CFBundleIconName</key>
 	<string>OS X AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>xyz.soundsphere</string>
+	<string>su.rizu</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>soundsphere</string>
+	<string>Rizu</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
